@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0B3B5A">
+<meta name="robots" content="noindex">
+<title>Gestão de Abastecimentos · Verbo Logística</title>
+<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<script src="config.js"></script>
+<style>
+:root{
+  --bg:#F2F5F7;--surface:#FFFFFF;--surface-2:#EBF0F3;--ink:#0E1E2B;--muted:#5A6A77;--line:#D7DFE5;
+  --brand:#0B3B5A;--brand-ink:#FFFFFF;--brand-soft:#DCE8F0;
+  --accent:#D99A06;--accent-ink:#2B1F00;--accent-soft:#FBEFCF;
+  --ok:#1E8257;--ok-soft:#DDF1E6;--warn:#B87407;--warn-soft:#FCEBCC;--info:#2A6A96;--info-soft:#DCEAF5;--bad:#B9382F;--bad-soft:#F8DEDB;
+  --c1:#0B3B5A;--c2:#D99A06;--c3:#2F8F8A;--c4:#7A6BB0;--c5:#C9614A;--c6:#6E8B3D;--c7:#4C9AD0;--c8:#A08D6B;
+  --header-bg:#0B3B5A;--header-ink:#FFFFFF;--header-muted:#A9C3D6;
+  --shadow:0 1px 2px rgba(14,30,43,.06),0 6px 24px rgba(14,30,43,.06);
+  --f-display:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0A131A;--surface:#111D26;--surface-2:#172732;--ink:#E5ECF1;--muted:#93A5B2;--line:#243644;
+  --brand:#5FA8D3;--brand-ink:#06131C;--brand-soft:#16303F;
+  --accent:#F0B429;--accent-ink:#231800;--accent-soft:#3A2D0C;
+  --ok:#4CC08A;--ok-soft:#123326;--warn:#E9A23B;--warn-soft:#3A2A0E;--info:#6DB2E0;--info-soft:#132D40;--bad:#EE7C72;--bad-soft:#3D1A17;
+  --c1:#5FA8D3;--c2:#F0B429;--c3:#4FC1B9;--c4:#A898E0;--c5:#EE8A70;--c6:#9BC160;--c7:#8EC8F0;--c8:#C9B48F;
+  --header-bg:#0E2230;--header-ink:#E5ECF1;--header-muted:#88A3B6;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 24px rgba(0,0,0,.25);color-scheme:dark}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.5}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+a{color:var(--brand)}
+
+.top{background:var(--header-bg);color:var(--header-ink);position:sticky;top:0;z-index:20;padding-top:env(safe-area-inset-top)}
+.top-inner{max-width:1320px;margin:0 auto;padding-inline:20px;display:flex;align-items:center;gap:18px;min-height:68px;flex-wrap:wrap}
+.top-inner>img{height:40px;width:auto}
+.brand-txt{display:flex;flex-direction:column;line-height:1.1;min-width:0}
+.brand-txt b{font-family:var(--f-display);font-weight:800;font-size:19px;letter-spacing:.01em}
+.brand-txt span{font-size:12px;color:var(--header-muted);letter-spacing:.08em;text-transform:uppercase}
+.tabs{display:flex;gap:4px;margin-left:auto;flex-wrap:wrap}
+.tab{background:transparent;border:0;color:var(--header-muted);padding:10px 16px;border-radius:8px;cursor:pointer;font-weight:600;font-family:var(--f-display);letter-spacing:.02em;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.tab:hover{color:var(--header-ink)}
+.tab[aria-selected="true"]{background:rgba(255,255,255,.12);color:var(--header-ink);box-shadow:inset 0 -3px 0 var(--accent)}
+.tab.ext{border:1px solid rgba(255,255,255,.22)}
+.tools{display:flex;align-items:center;gap:8px;color:var(--header-muted);font-size:12px}
+.tools button{background:rgba(255,255,255,.1);border:0;color:var(--header-ink);border-radius:8px;padding:7px 10px;cursor:pointer;font-size:12.5px;font-weight:600}
+
+main{max-width:1320px;margin:0 auto;padding:24px 20px 64px}
+.banner{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px}
+.banner.demo{background:var(--accent-soft);border:1px solid var(--accent)}
+.banner.err{background:var(--bad-soft);border:1px solid var(--bad)}
+.banner b{font-family:var(--f-display);letter-spacing:.06em;text-transform:uppercase;font-size:12px}
+
+.btn{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--surface);padding:9px 14px;border-radius:8px;cursor:pointer;font-weight:500;white-space:nowrap;text-decoration:none;color:var(--ink)}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.danger{color:var(--bad);border-color:var(--bad)}
+.btn.danger.armed{background:var(--bad);color:var(--surface)}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.btn.sm{padding:5px 10px;font-size:13px}
+label.f{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.02em;min-width:0}
+.in{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:7px;padding:9px 11px;color:var(--ink);font-weight:400;font-size:14px;min-width:0}
+.in:focus{border-color:var(--brand);outline:none;box-shadow:0 0 0 3px var(--brand-soft)}
+.in.invalid{border-color:var(--bad);box-shadow:0 0 0 3px var(--bad-soft)}
+
+.phead{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+.phead h1{font-family:var(--f-display);font-weight:800;font-size:28px;margin:0;letter-spacing:-.01em}
+.phead p{margin:2px 0 0;color:var(--muted)}
+.eyebrow{font-family:var(--f-display);font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+
+.filters{display:grid;grid-template-columns:2fr repeat(5,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.strip{display:flex;gap:28px;flex-wrap:wrap;padding:12px 16px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r) var(--r) 0 0;border-bottom:0}
+.strip div{display:flex;flex-direction:column}
+.strip small{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.strip strong{font-family:var(--f-mono);font-size:17px;font-weight:600}
+.tbl-wrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:0 0 var(--r) var(--r)}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:10px 12px;border-bottom:1px solid var(--line);background:var(--surface-2);white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+tbody tr:last-child td{border-bottom:0}
+tr.row{cursor:pointer}
+tr.row:hover td{background:var(--surface-2)}
+td.r,th.r{text-align:right}
+.sub{color:var(--muted);font-size:12px}
+.plate{font-family:var(--f-mono);font-weight:600;letter-spacing:.04em;background:var(--surface-2);border:1px solid var(--line);border-radius:4px;padding:1px 6px;font-size:12.5px;white-space:nowrap}
+.fuel{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.fuel i{width:8px;height:8px;border-radius:2px;display:inline-block}
+.clip{display:inline-flex;align-items:center;gap:4px;color:var(--brand);font-size:12px;font-weight:600}
+.clip.none{color:var(--muted);font-weight:400}
+.flag{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.04em;padding:1px 7px;border-radius:999px;background:var(--warn-soft);color:var(--warn);margin-left:6px;vertical-align:middle}
+.empty{padding:56px 24px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px}
+.empty h3{font-family:var(--f-display);font-size:20px;margin:0}
+.empty p{color:var(--muted);margin:0;max-width:56ch}
+
+/* Login */
+.login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(160deg,var(--header-bg) 0%,var(--header-bg) 45%,var(--bg) 45%)}
+.login-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:28px;width:100%;max-width:400px;display:flex;flex-direction:column;gap:14px}
+.login-card .lg{background:var(--header-bg);border-radius:10px;padding:16px;display:flex;justify-content:center}
+.login-card .lg img{height:48px}
+.login-card h1{font-family:var(--f-display);font-size:22px;margin:0}
+.login-card p{margin:0;color:var(--muted)}
+.chk{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted)}
+
+/* Drawer */
+.scrim{position:fixed;inset:0;background:rgba(6,16,24,.45);z-index:40}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(640px,100%);background:var(--bg);z-index:41;display:flex;flex-direction:column;box-shadow:-10px 0 40px rgba(0,0,0,.2);padding-top:env(safe-area-inset-top)}
+.drawer header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line);background:var(--surface)}
+.drawer header h2{font-family:var(--f-display);font-size:20px;margin:0}
+.drawer .body{overflow-y:auto;padding:18px 20px 24px;display:flex;flex-direction:column;gap:16px;flex:1}
+.drawer footer{display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap;padding:14px 20px calc(14px + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:var(--surface)}
+fieldset{border:1px solid var(--line);border-radius:var(--r);background:var(--surface);padding:14px 16px 16px;margin:0;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+legend{font-family:var(--f-display);font-weight:700;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--brand);padding:0 6px}
+.span2{grid-column:1/-1}
+.photo{grid-column:1/-1;border-radius:8px;overflow:hidden;background:var(--surface-2);min-height:120px;display:flex;align-items:center;justify-content:center;color:var(--muted)}
+.photo img{max-width:100%;max-height:60vh;display:block;cursor:zoom-in}
+.err-msg{color:var(--bad);font-weight:500;font-size:13px}
+.lb{position:fixed;inset:0;z-index:60;background:rgba(4,10,15,.9);display:flex;align-items:center;justify-content:center;padding:20px;flex-direction:column;gap:12px}
+.lb img{max-width:100%;max-height:86vh;border-radius:6px;background:#fff}
+.lb button{color:#fff;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);border-radius:8px;padding:8px 14px;cursor:pointer}
+
+/* Dashboard */
+.rep-head{display:flex;gap:20px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--header-bg);color:var(--header-ink);border-radius:var(--r);padding:22px 24px;margin-bottom:14px;position:relative;overflow:hidden}
+.rep-head::after{content:"";position:absolute;right:0;top:0;bottom:0;width:8px;background:linear-gradient(var(--accent),#02654D)}
+.rep-id{display:flex;align-items:center;gap:20px;min-width:0}
+.rep-id img{height:50px}
+.rep-id .eyebrow{color:var(--accent)}
+.rep-id h1{font-family:var(--f-display);font-size:26px;font-weight:800;margin:2px 0 0;letter-spacing:-.01em}
+.rep-meta{text-align:right;font-size:12px;color:var(--header-muted);padding-right:10px}
+.rep-meta b{display:block;color:var(--header-ink);font-family:var(--f-mono);font-size:13px;font-weight:500}
+.rep-filters{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;margin-bottom:16px;align-items:end}
+.kpis{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px 16px 14px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.kpi small{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.kpi strong{font-family:var(--f-mono);font-weight:600;font-size:clamp(17px,1.7vw,24px);white-space:nowrap;letter-spacing:-.02em;overflow-wrap:anywhere;line-height:1.15}
+.kpi .sub{font-size:12px}
+.kpi.hero{grid-column:span 2;}
+.kpi.hero strong{font-size:clamp(22px,2.4vw,32px)}
+.kpi.hero{background:linear-gradient(135deg,var(--accent-soft),var(--surface));border-color:var(--accent)}
+.delta{font-size:12px;font-weight:600;font-family:var(--f-mono)}
+.delta.up{color:var(--bad)}
+.delta.down{color:var(--ok)}
+.insight{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:var(--r);padding:14px 18px;margin-bottom:14px;display:flex;gap:16px;align-items:flex-start}
+.insight ul{margin:0;padding-left:18px;display:grid;grid-template-columns:1fr 1fr;gap:4px 28px}
+.insight .eyebrow{white-space:nowrap;padding-top:2px}
+.grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;min-width:0;display:flex;flex-direction:column;gap:10px}
+.card h3{font-family:var(--f-display);font-size:15px;font-weight:700;margin:0}
+.card .ch{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.card .cap{color:var(--muted);font-size:12px;margin:-6px 0 0}
+.s12{grid-column:span 12}.s8{grid-column:span 8}.s6{grid-column:span 6}.s4{grid-column:span 4}
+.cv{position:relative;height:290px;width:100%}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;flex-wrap:wrap}
+.seg button{border:0;background:transparent;padding:5px 12px;font-size:12.5px;cursor:pointer;color:var(--muted);font-weight:600}
+.seg button[aria-pressed="true"]{background:var(--brand);color:var(--brand-ink)}
+.mini td,.mini th{padding:8px 10px}
+.mini{font-size:13px}
+.bar-cell{display:flex;align-items:center;gap:8px;justify-content:flex-end}
+.bar-cell span{white-space:nowrap}
+.bar-cell i{display:block;height:6px;border-radius:3px;background:var(--brand);min-width:2px}
+.good{color:var(--ok);font-weight:600}.badc{color:var(--bad);font-weight:600}
+.legend{display:flex;flex-direction:column;gap:6px;font-size:13px}
+.legend div{display:flex;align-items:center;gap:8px}
+.legend i{width:10px;height:10px;border-radius:2px;display:inline-block;flex:none}
+.legend span{flex:1}
+.legend b{font-family:var(--f-mono);font-weight:500}
+.donut-wrap{display:grid;grid-template-columns:1fr;gap:12px}
+.donut-wrap .cv{height:200px}
+.alerts{display:flex;flex-direction:column}
+.al{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.al:last-child{border-bottom:0}
+.al .ic{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex:none;font-weight:800;font-family:var(--f-display)}
+.al .ic.w{background:var(--warn-soft);color:var(--warn)}
+.al .ic.b{background:var(--bad-soft);color:var(--bad)}
+.al .ic.i{background:var(--info-soft);color:var(--info)}
+.al div{flex:1;min-width:0}
+.al small{color:var(--muted)}
+
+/* Cadastros */
+.cad-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:start}
+.cad-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+.cad-item:last-child{border-bottom:0}
+.cad-item .d{flex:1;min-width:0}
+.cad-item .d b{font-weight:600;display:block;overflow-wrap:anywhere}
+.cad-item.off .d b{color:var(--muted);text-decoration:line-through}
+.sw{position:relative;width:38px;height:22px;flex:none}
+.sw input{opacity:0;position:absolute;inset:0;margin:0;cursor:pointer;z-index:1}
+.sw span{position:absolute;inset:0;border-radius:999px;background:var(--line);transition:.15s}
+.sw span::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:.15s}
+.sw input:checked+span{background:var(--ok)}
+.sw input:checked+span::after{left:19px}
+.sw input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
+.edit-row{display:flex;flex-direction:column;gap:8px;padding:10px;border:1px dashed var(--accent);border-radius:8px;background:var(--accent-soft);margin:6px 0}
+
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:8px;z-index:70;font-weight:500;box-shadow:var(--shadow)}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+@media (max-width:1100px){
+  .kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .kpis .hero{grid-column:span 3}
+  .s8,.s6,.s4{grid-column:span 12}
+  .rep-filters{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .filters{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .filters .q{grid-column:1/-1}
+  .cad-grid{grid-template-columns:1fr}
+  .insight ul{grid-template-columns:1fr}
+}
+@media (max-width:760px){
+  .top-inner{padding-inline:16px;gap:10px;padding-block:8px}
+  .tabs{margin-left:0;width:100%}
+  .tab{flex:1;justify-content:center;padding:9px 8px;font-size:13px}
+  .tools{width:100%;justify-content:space-between}
+  main{padding-inline:16px}
+  .filters{grid-template-columns:1fr 1fr}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .kpis .hero{grid-column:1/-1}
+  .rep-filters{grid-template-columns:1fr 1fr}
+  .rep-meta{text-align:left}
+  .rep-id{flex-direction:column;align-items:flex-start;gap:10px}
+  .rep-id img{height:34px}
+  .rep-id h1{font-size:22px}
+  .insight{flex-direction:column;gap:6px}
+  fieldset{grid-template-columns:1fr}
+  .hide-sm{display:none}
+  .phead h1{font-size:23px}
+}
+@media (prefers-reduced-motion:no-preference){.drawer{animation:slide .22s ease-out}@keyframes slide{from{transform:translateX(30px);opacity:.6}to{transform:none;opacity:1}}}
+@media print{.top,.rep-filters,.tools,.banner{display:none!important}body{background:#fff}.card,.kpi{break-inside:avoid}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<section class="login" id="vLogin" hidden>
+  <form class="login-card" id="frmLogin">
+    <div class="lg"><img src="logo.png" alt="Verbo Logística"></div>
+    <div><div class="eyebrow">Acesso da gestão</div><h1>Controle de Abastecimentos</h1></div>
+    <p>Digite a senha do gestor definida no Google Apps Script.</p>
+    <label class="f">Senha<input class="in" type="password" id="inSenha" autocomplete="current-password" required></label>
+    <label class="chk"><input type="checkbox" id="chkLembrar" checked> Manter conectado neste computador</label>
+    <div class="err-msg" id="loginErr" hidden></div>
+    <button class="btn primary" type="submit" id="btnLogin" style="justify-content:center;padding:12px">Entrar</button>
+    <button class="btn" type="button" id="btnDemo" style="justify-content:center">Ver painel com dados de exemplo</button>
+  </form>
+</section>
+
+<!-- APP -->
+<div id="vApp" hidden>
+<header class="top">
+  <div class="top-inner">
+    <img src="logo.png" alt="Verbo Logística">
+    <div class="brand-txt"><b>Verbo Logística</b><span>Controle de abastecimentos</span></div>
+    <nav class="tabs" role="tablist">
+      <button class="tab" role="tab" data-tab="lanc" aria-selected="true">Lançamentos</button>
+      <button class="tab" role="tab" data-tab="dash" aria-selected="false">Dashboard</button>
+      <button class="tab" role="tab" data-tab="cad" aria-selected="false">Cadastros</button>
+      <a class="tab ext" id="lnkReemb" target="_blank" rel="noopener">Reembolsos ↗</a>
+    </nav>
+    <div class="tools"><span id="upd">—</span><button type="button" id="btnRefresh">Atualizar</button><button type="button" id="btnSair">Sair</button></div>
+  </div>
+</header>
+
+<main>
+  <div id="banners"></div>
+
+  <!-- LANÇAMENTOS -->
+  <section id="view-lanc">
+    <div class="phead">
+      <div><div class="eyebrow">Frota · registros dos condutores</div><h1>Lançamentos de abastecimento</h1><p>Tudo o que os condutores enviaram pelo app. Clique em uma linha para ver a foto, corrigir ou excluir.</p></div>
+      <div class="actions"><a class="btn" id="lnkPlan" target="_blank" rel="noopener" hidden>Abrir planilha ↗</a><button class="btn" id="btnCsv" type="button">Exportar CSV</button></div>
+    </div>
+    <div class="filters">
+      <input class="in q" id="fQ" type="search" placeholder="Buscar motorista, placa, posto, observação…" aria-label="Buscar">
+      <input class="in" id="fMes" type="month" aria-label="Mês">
+      <select class="in" id="fMot" aria-label="Motorista"><option value="">Todos os motoristas</option></select>
+      <select class="in" id="fPla" aria-label="Veículo"><option value="">Todos os veículos</option></select>
+      <select class="in" id="fCom" aria-label="Combustível"><option value="">Todos os combustíveis</option></select>
+      <select class="in" id="fPos" aria-label="Posto"><option value="">Todos os postos</option></select>
+    </div>
+    <div class="strip" id="strip"></div>
+    <div class="tbl-wrap" id="listWrap"></div>
+  </section>
+
+  <!-- DASHBOARD -->
+  <section id="view-dash" hidden>
+    <div class="rep-head">
+      <div class="rep-id"><img src="logo.png" alt="Verbo Logística"><div><div class="eyebrow">Painel gerencial · Abastecimentos</div><h1>Desempenho da frota</h1></div></div>
+      <div class="rep-meta">Período analisado<b id="repPer">—</b>Atualizado em<b id="repGer">—</b></div>
+    </div>
+    <div class="rep-filters">
+      <label class="f">Período<select class="in" id="rPer">
+        <option value="mes">Este mês</option><option value="mesant">Mês passado</option><option value="30d">Últimos 30 dias</option>
+        <option value="3m">Últimos 3 meses</option><option value="6m">Últimos 6 meses</option><option value="ano">Este ano</option>
+        <option value="tudo">Todo o histórico</option><option value="custom">Personalizado</option></select></label>
+      <label class="f">De<input class="in" id="rDe" type="date"></label>
+      <label class="f">Até<input class="in" id="rAte" type="date"></label>
+      <label class="f">Veículo<select class="in" id="rPla"><option value="">Todos</option></select></label>
+      <label class="f">Motorista<select class="in" id="rMot"><option value="">Todos</option></select></label>
+      <label class="f">Combustível<select class="in" id="rCom"><option value="">Todos</option></select></label>
+      <label class="f">Posto<select class="in" id="rPos"><option value="">Todos</option></select></label>
+    </div>
+    <div id="dashBody"></div>
+  </section>
+
+  <!-- CADASTROS -->
+  <section id="view-cad" hidden>
+    <div class="phead"><div><div class="eyebrow">Listas usadas no app do condutor</div><h1>Cadastros</h1><p>Criados automaticamente quando o condutor digita um nome, placa ou posto novo. Corrija a grafia, una duplicados (renomeie para um nome que já existe) ou desative o que não deve mais aparecer.</p></div></div>
+    <div class="cad-grid" id="cadBody"></div>
+  </section>
+</main>
+</div>
+
+<div id="drawerHost"></div>
+<div id="lbHost"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="gestor.js"></script>
+</body>
+</html>
