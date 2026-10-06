@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0B3B5A">
+<title>Como instalar · Abastecimentos Verbo</title>
+<link rel="icon" href="icon-192.png">
+<style>
+:root{--bg:#F2F5F7;--surface:#fff;--ink:#0E1E2B;--muted:#5A6A77;--line:#D7DFE5;--brand:#0B3B5A;--brand-soft:#DCE8F0;--accent:#D99A06;--accent-soft:#FBEFCF;--ok:#1E8257;
+  --f:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.45 var(--f)}
+header{background:var(--brand);color:#fff;padding:calc(14px + env(safe-area-inset-top)) 16px 18px}
+.hd{max-width:720px;margin:0 auto;display:flex;align-items:center;gap:12px}
+.hd img{height:34px}
+.hd b{display:block;font-size:19px}
+.hd span{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:#A9C3D6}
+main{max-width:720px;margin:0 auto;padding:16px 16px 40px}
+.lead{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:14px}
+.lead p{margin:0 0 6px}.lead p:last-child{margin:0}
+.link{display:inline-block;font-weight:700;color:var(--brand);background:var(--brand-soft);border-radius:8px;padding:2px 8px;word-break:break-all}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:5px;margin-bottom:14px;position:sticky;top:0;z-index:3}
+.tabs button{border:0;border-radius:9px;padding:11px 8px;font:600 15px var(--f);background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+.tabs button[aria-selected="true"]{background:var(--brand);color:#fff}
+.step{display:grid;grid-template-columns:150px 1fr;gap:16px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+.step svg{width:150px;height:auto;display:block}
+.n{display:inline-flex;width:30px;height:30px;border-radius:50%;background:var(--accent);color:#2B1F00;font-weight:800;align-items:center;justify-content:center;margin-bottom:6px}
+.step h3{margin:0 0 4px;font-size:17px}
+.step p{margin:0;color:var(--muted);font-size:15px}
+.step p b{color:var(--ink)}
+.tip{background:var(--accent-soft);border:1px solid var(--accent);border-radius:12px;padding:12px 14px;font-size:14px;margin:4px 0 14px}
+h2{font-size:14px;letter-spacing:.12em;text-transform:uppercase;color:var(--brand);margin:22px 0 10px}
+.use{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:6px 16px}
+.use li{padding:8px 0;border-bottom:1px solid var(--line)}
+.use li:last-child{border-bottom:0}
+.use ol{margin:0;padding-left:18px}
+.cta{display:block;text-align:center;background:var(--accent);color:#2B1F00;font-weight:800;text-decoration:none;border-radius:12px;padding:15px;margin-top:16px;font-size:17px}
+[hidden]{display:none!important}
+@media (max-width:480px){.step{grid-template-columns:118px 1fr;gap:12px;padding:12px}.step svg{width:118px}}
+</style>
+</head>
+<body>
+<header><div class="hd"><img src="logo.png" alt="Verbo Logística"><div><b>Como instalar o app</b><span>Abastecimentos · condutores</span></div></div></header>
+<main>
+  <div class="lead">
+    <p>O app de abastecimentos não fica na loja (Play Store / App Store). Ele é instalado direto pelo navegador, em 1 minuto, e depois funciona <b>até sem internet</b>.</p>
+    <p>Endereço do app: <span class="link">verbologistica.github.io</span></p>
+  </div>
+
+  <div class="tabs" role="tablist">
+    <button role="tab" id="t-android" aria-selected="true" data-p="android">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 9h12v8a1 1 0 0 1-1 1h-1v3h-2v-3h-4v3H8v-3H7a1 1 0 0 1-1-1V9zm-3 0h2v6H3zm16 0h2v6h-2zM7.5 4.2 6.6 2.7l.9-.5 1 1.6A6.9 6.9 0 0 1 12 3c1.3 0 2.5.3 3.5.8l1-1.6.9.5-.9 1.5A6 6 0 0 1 18 8H6a6 6 0 0 1 1.5-3.8zM9.5 6a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5zm5 0a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5z"/></svg>Android</button>
+    <button role="tab" id="t-iphone" aria-selected="false" data-p="iphone">
+      <svg width="16" height="18" viewBox="0 0 20 24" fill="currentColor" aria-hidden="true"><path d="M16.4 12.7c0-2.6 2.1-3.8 2.2-3.9a4.8 4.8 0 0 0-3.8-2c-1.6-.2-3.1.9-3.9.9s-2-.9-3.4-.9a5 5 0 0 0-4.2 2.6c-1.8 3.1-.5 7.7 1.3 10.2.9 1.2 1.9 2.6 3.2 2.6s1.8-.8 3.3-.8 2 .8 3.4.8 2.2-1.3 3.1-2.5a10.7 10.7 0 0 0 1.4-2.9 4.5 4.5 0 0 1-2.6-4.1zM13.9 5a4.5 4.5 0 0 0 1-3.3 4.6 4.6 0 0 0-3 1.6 4.3 4.3 0 0 0-1.1 3.2 3.8 3.8 0 0 0 3.1-1.5z"/></svg>iPhone</button>
+  </div>
+
+  <section id="p-android"></section>
+  <section id="p-iphone" hidden></section>
+
+  <h2>No primeiro uso</h2>
+  <div class="use"><ol>
+    <li>Abra o app <b>com internet</b> pelo menos uma vez (para ele baixar as listas).</li>
+    <li>Em <b>Nome completo</b>, escolha seu nome. Se não estiver na lista, toque em <b>"Meu nome não está na lista"</b> e digite nome e sobrenome. Nas próximas vezes ele já vem preenchido.</li>
+    <li>Placa e posto novos: escolha <b>"Cadastrar nova…"</b> e digite uma única vez.</li>
+    <li>Informe <b>hodômetro, combustível, quem pagou</b> (empresa ou você, para reembolso), <b>litros e valor</b>, tire a <b>foto do cupom</b> e toque em <b>Salvar</b>.</li>
+    <li>Sem sinal? Pode salvar mesmo assim. Aparece "Aguardando internet" e o envio é feito sozinho quando o sinal voltar.</li>
+  </ol></div>
+  <a class="cta" href="./">Abrir o app de abastecimentos</a>
+</main>
+<script>
+(function(){
+"use strict";
+const B="#0B3B5A",A="#D99A06",L="#D7DFE5",M="#8A99A6",S="#F2F5F7";
+// moldura de celular 150x300
+function phone(inner,ios){return `<svg viewBox="0 0 150 300" role="img" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+  <rect x="3" y="3" width="144" height="294" rx="22" fill="#1C2630"/><rect x="9" y="9" width="132" height="282" rx="17" fill="#fff"/>
+  ${ios?`<rect x="55" y="14" width="40" height="11" rx="5.5" fill="#1C2630"/>`:`<circle cx="75" cy="19" r="4" fill="#1C2630"/>`}
+  <g transform="translate(9,30)">${inner}</g></svg>`}
+// página do app (miniatura)
+const appPage=(y=0)=>`<rect x="0" y="${y}" width="132" height="26" fill="${B}"/><path d="M8 ${y+8}l5 10 5-10" stroke="#1F7A55" stroke-width="3" fill="none"/><path d="M15 ${y+8}l6 0" stroke="${A}" stroke-width="3"/><rect x="26" y="${y+9}" width="50" height="5" rx="2" fill="#fff"/><rect x="26" y="${y+16}" width="34" height="3" rx="1.5" fill="#A9C3D6"/>
+  ${[0,1,2,3].map(i=>`<rect x="8" y="${y+36+i*30}" width="116" height="22" rx="5" fill="${S}" stroke="${L}"/>`).join("")}
+  <rect x="8" y="${y+160}" width="116" height="20" rx="6" fill="${A}"/>`;
+const ring=(cx,cy,r=13)=>`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${A}" stroke-width="3.5"/><circle cx="${cx}" cy="${cy}" r="${r+5}" fill="none" stroke="${A}" stroke-width="1.5" opacity=".5"/>`;
+const hand=(x,y)=>`<path d="M${x} ${y} l7 16 3-7 8 8 4-4-8-8 7-3z" fill="#fff" stroke="#1C2630" stroke-width="1.6" stroke-linejoin="round"/>`;
+
+// ---------- ANDROID (Chrome)
+const chromeBar=(hl)=>`<rect x="0" y="0" width="132" height="22" fill="#F1F3F4"/><rect x="6" y="4" width="98" height="14" rx="7" fill="#fff" stroke="${L}"/>
+  <text x="14" y="14" font-size="7" font-family="sans-serif" fill="#333">verbologistica.github.io</text>
+  <g fill="#444"><circle cx="120" cy="6" r="1.6"/><circle cx="120" cy="11" r="1.6"/><circle cx="120" cy="16" r="1.6"/></g>${hl?ring(120,11,9):""}`;
+const a1=phone(`${chromeBar(false)}<g transform="translate(0,24)">${appPage()}</g>${hand(70,120)}`);
+const a2=phone(`${chromeBar(true)}<g transform="translate(0,24)" opacity=".35">${appPage()}</g>${hand(122,22)}`);
+const a3=phone(`${chromeBar(false)}<g transform="translate(0,24)" opacity=".25">${appPage()}</g>
+  <rect x="44" y="20" width="84" height="150" rx="6" fill="#fff" stroke="${L}" filter="drop-shadow(0 2px 4px rgba(0,0,0,.2))"/>
+  ${["Nova guia","Favoritos","Histórico","Compartilhar…"].map((t,i)=>`<text x="52" y="${38+i*17}" font-size="7.5" font-family="sans-serif" fill="#333">${t}</text>`).join("")}
+  <rect x="47" y="100" width="78" height="18" rx="4" fill="${A}" opacity=".2"/><text x="52" y="112" font-size="8" font-weight="700" font-family="sans-serif" fill="#111">Instalar app</text>
+  ${["Configurações","Ajuda"].map((t,i)=>`<text x="52" y="${134+i*17}" font-size="7.5" font-family="sans-serif" fill="#333">${t}</text>`).join("")}
+  <rect x="45" y="98" width="82" height="22" rx="5" fill="none" stroke="${A}" stroke-width="3"/>${hand(110,112)}`);
+const a4=phone(`<rect x="0" y="0" width="132" height="250" fill="#000" opacity=".35"/>
+  <rect x="12" y="70" width="108" height="92" rx="10" fill="#fff"/>
+  <image href="icon-192.png" x="20" y="80" width="22" height="22"/><text x="48" y="90" font-size="8" font-weight="700" font-family="sans-serif" fill="#111">Instalar app?</text>
+  <text x="48" y="100" font-size="6.5" font-family="sans-serif" fill="#555">Abastecimentos</text>
+  <text x="48" y="108" font-size="6" font-family="sans-serif" fill="#777">verbologistica.github.io</text>
+  <text x="44" y="148" font-size="8" font-family="sans-serif" fill="#1A73E8">Cancelar</text>
+  <rect x="80" y="137" width="32" height="16" rx="8" fill="#1A73E8"/><text x="85" y="148" font-size="8" font-weight="700" font-family="sans-serif" fill="#fff">Instalar</text>
+  <rect x="77" y="134" width="38" height="22" rx="11" fill="none" stroke="${A}" stroke-width="3"/>${hand(100,150)}`);
+const homeScreen=(ios)=>phone(`<rect x="0" y="-21" width="132" height="282" fill="url(#g${ios?1:0})"/>
+  <defs><linearGradient id="g${ios?1:0}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2E6B8F"/><stop offset="1" stop-color="#0B3B5A"/></linearGradient></defs>
+  ${[0,1,2,3].map(c=>[0,1,2].map(r=>(c===1&&r===1)?"":`<rect x="${12+c*29}" y="${20+r*40}" width="20" height="20" rx="${ios?6:10}" fill="#fff" opacity=".25"/>`).join("")).join("")}
+  <image href="icon-192.png" x="41" y="60" width="20" height="20"/>
+  <text x="51" y="91" font-size="5.5" text-anchor="middle" font-family="sans-serif" fill="#fff">Abastecim…</text>
+  ${ring(51,70,14)}${hand(58,78)}`,ios);
+
+// ---------- iPHONE (Safari)
+const safariBottom=(hl)=>`<rect x="0" y="224" width="132" height="37" fill="#F7F7F7"/><rect x="8" y="228" width="116" height="13" rx="6.5" fill="#E9E9EB"/>
+  <text x="66" y="237" font-size="6.5" text-anchor="middle" font-family="sans-serif" fill="#333">verbologistica.github.io</text>
+  <g stroke="#1A7CF5" stroke-width="1.6" fill="none" stroke-linecap="round"><path d="M14 251l-4-4 4-4"/><path d="M34 243l4 4-4 4" opacity=".4"/>
+  <path d="M62 250v-9m-3.5 3 3.5-3.5 3.5 3.5"/><path d="M58 245h-2.5v8h12v-8H65"/>
+  <rect x="88" y="244" width="8" height="8" rx="1"/><path d="M112 244h8v8h-8z M114 242h8v8"/></g>${hl?ring(62,247,10):""}`;
+const i1=phone(`${appPage(0)}${safariBottom(false)}${hand(70,120)}`,true);
+const i2=phone(`<g opacity=".35">${appPage(0)}</g>${safariBottom(true)}${hand(64,252)}`,true);
+const i3=phone(`<g opacity=".25">${appPage(0)}</g><rect x="0" y="90" width="132" height="171" rx="10" fill="#F2F2F7"/>
+  <rect x="10" y="98" width="112" height="22" rx="6" fill="#fff"/><image href="icon-192.png" x="14" y="101" width="16" height="16"/><text x="36" y="112" font-size="7" font-family="sans-serif" fill="#111">Abastecimentos · Verbo</text>
+  <rect x="10" y="126" width="112" height="${4*17}" rx="6" fill="#fff"/>
+  ${["Copiar","Adicionar aos Favoritos","Adicionar à Tela de Início","Buscar na Página"].map((t,i)=>`<text x="16" y="${138+i*17}" font-size="7" font-family="sans-serif" fill="#111" ${i===2?'font-weight="700"':""}>${t}</text>${i<3?`<rect x="16" y="${143+i*17}" width="100" height=".6" fill="${L}"/>`:""}`).join("")}
+  <path d="M110 166.5h6m-3-3v6" stroke="#111" stroke-width="1.2"/><rect x="108" y="161" width="10" height="10" rx="2" fill="none" stroke="#111" stroke-width="1"/>
+  <rect x="11" y="160" width="110" height="16" rx="4" fill="none" stroke="${A}" stroke-width="3"/>${hand(92,172)}
+  <text x="66" y="215" font-size="6" text-anchor="middle" font-family="sans-serif" fill="#888">role para baixo se não aparecer</text>`,true);
+const i4=phone(`<rect x="0" y="0" width="132" height="261" fill="#F2F2F7"/>
+  <text x="10" y="16" font-size="7.5" font-family="sans-serif" fill="#1A7CF5">Cancelar</text>
+  <text x="66" y="16" font-size="7.5" text-anchor="middle" font-weight="700" font-family="sans-serif" fill="#111">Adicionar</text>
+  <text x="101" y="16" font-size="7" font-weight="700" font-family="sans-serif" fill="#1A7CF5">Adicionar</text>
+  <rect x="98" y="6" width="32" height="14" rx="4" fill="none" stroke="${A}" stroke-width="3"/>
+  <rect x="8" y="30" width="116" height="40" rx="8" fill="#fff"/><image href="icon-192.png" x="14" y="36" width="28" height="28"/>
+  <text x="48" y="48" font-size="7.5" font-family="sans-serif" fill="#111">Abastecimentos</text><text x="48" y="60" font-size="6" font-family="sans-serif" fill="#888">verbologistica.github.io</text>
+  ${hand(116,20)}`,true);
+
+const STEPS={
+  android:[
+    [a1,"Abra o link no Chrome","Toque no link <b>verbologistica.github.io</b> que a empresa enviou no WhatsApp. Se abrir dentro do WhatsApp, toque nos <b>⋮</b> e escolha <b>Abrir no Chrome</b>."],
+    [a2,"Toque nos três pontinhos ⋮","Fica no <b>canto de cima, à direita</b>, ao lado do endereço do site."],
+    [a3,"Escolha “Instalar app”","Em alguns celulares aparece como <b>“Adicionar à tela inicial”</b>. Se o app mostrar um botão azul <b>Instalar</b> no topo, pode usar ele também."],
+    [a4,"Confirme em “Instalar”","Na janelinha que aparece, toque em <b>Instalar</b> (ou <b>Adicionar</b>)."],
+    [homeScreen(false),"Pronto! Abra pelo ícone","O ícone da <b>Verbo</b> aparece na tela inicial com o nome <b>Abastecimentos</b>. Use sempre por ele."]
+  ],
+  iphone:[
+    [i1,"Abra o link no Safari","Use o <b>Safari</b> (a bússola azul). Se o link abrir dentro do WhatsApp, toque no ícone da bússola ou em <b>Abrir no Safari</b>."],
+    [i2,"Toque em Compartilhar","É o <b>quadrado com a seta para cima</b>, na barra de baixo (em alguns iPhones fica em cima)."],
+    [i3,"Escolha “Adicionar à Tela de Início”","Role a lista para baixo até achar <b>Adicionar à Tela de Início</b> (ícone de quadrado com +)."],
+    [i4,"Toque em “Adicionar”","No canto de cima, à direita. Pode manter o nome <b>Abastecimentos</b>."],
+    [homeScreen(true),"Pronto! Abra pelo ícone","O ícone da <b>Verbo</b> aparece na tela de início. Abra sempre por ele — assim funciona sem internet."]
+  ]
+};
+for(const p of ["android","iphone"]){
+  document.getElementById("p-"+p).innerHTML=(p==="iphone"?`<div class="tip">No iPhone a instalação <b>só funciona pelo Safari</b> (não pelo Chrome).</div>`:"")+
+    STEPS[p].map(([svg,t,d],i)=>`<div class="step">${svg}<div><span class="n">${i+1}</span><h3>${t}</h3><p>${d}</p></div></div>`).join("");
+}
+const tabs=[...document.querySelectorAll(".tabs button")];
+function show(p){tabs.forEach(b=>b.setAttribute("aria-selected",String(b.dataset.p===p)));["android","iphone"].forEach(x=>document.getElementById("p-"+x).hidden=x!==p)}
+tabs.forEach(b=>b.onclick=()=>{show(b.dataset.p);history.replaceState(null,"","#"+b.dataset.p)});
+const h=location.hash.slice(1);
+const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+show(h==="iphone"||h==="android"?h:(isIOS?"iphone":"android"));
+})();
+</script>
+</body>
+</html>
