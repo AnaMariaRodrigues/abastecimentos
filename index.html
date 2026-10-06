@@ -68,6 +68,21 @@ select.in{appearance:none;-webkit-appearance:none;background-image:linear-gradie
 @media (prefers-color-scheme:dark){.chip input:checked+span{color:#06131C}}
 .chip input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
 .chips.bad .chip span{border-color:var(--bad)}
+.pays{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pay{position:relative}
+.pay input{position:absolute;opacity:0;inset:0}
+.pay span{display:flex;flex-direction:column;gap:2px;min-height:64px;padding:10px 12px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);cursor:pointer;font-weight:600;font-size:15px;line-height:1.2}
+.pay span small{font-weight:400;font-size:12px;color:var(--muted)}
+.pay input:checked+span{border-color:var(--brand);background:var(--brand-soft);box-shadow:inset 0 0 0 1px var(--brand)}
+.pay input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
+.pays.bad .pay span{border-color:var(--bad)}
+.payhint{margin:8px 0 0;font-size:13px;color:var(--warn);font-weight:600}
+.tagr{display:inline-block;font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:999px;background:var(--accent-soft);color:var(--ink);margin-left:6px;vertical-align:1px}
+.install{display:flex;align-items:center;gap:10px;background:var(--brand-soft);border:1px solid var(--brand);border-radius:12px;padding:10px 12px;margin-bottom:12px;font-size:14px}
+.install b{display:block}
+.install div{flex:1}
+.install button,.install a{border:0;background:var(--brand);color:#fff;border-radius:10px;padding:9px 12px;font-weight:700;font-size:14px;text-decoration:none;white-space:nowrap;cursor:pointer}
+.install .x{background:transparent;color:var(--muted);padding:6px;font-size:18px;line-height:1}
 .calc{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:10px;background:var(--surface-2);font-size:14px}
 .calc b{font-family:var(--mono);font-size:17px}
 .calc.warn{background:var(--warn-soft);color:var(--ink)}
@@ -120,6 +135,7 @@ select.in{appearance:none;-webkit-appearance:none;background-image:linear-gradie
 
 <main>
   <div id="banners"></div>
+  <div id="installHost"></div>
 
   <form id="frm" novalidate autocomplete="off">
     <section class="card" id="cardWho">
@@ -162,6 +178,12 @@ select.in{appearance:none;-webkit-appearance:none;background-image:linear-gradie
       </div>
       <div class="f"><span>Combustível <em>*</em></span>
         <div class="chips" id="chips" role="radiogroup" aria-label="Tipo de combustível"></div></div>
+      <div class="f"><span>Quem pagou? <em>*</em></span>
+        <div class="pays" id="pays" role="radiogroup" aria-label="Forma de pagamento">
+          <label class="pay"><input type="radio" name="pag" value="Empresa"><span>Empresa<small>Faturado / cartão da empresa</small></span></label>
+          <label class="pay"><input type="radio" name="pag" value="Reembolso"><span>Eu paguei<small>Pedir reembolso</small></span></label>
+        </div>
+        <p class="payhint" id="payhint" hidden>Este valor vai para o controle de reembolsos. Guarde o comprovante.</p></div>
       <div class="row2">
         <label class="f"><span>Litros <em>*</em></span><input class="in num" id="inLitros" inputmode="decimal" placeholder="0,000"></label>
         <label class="f"><span>Valor total (R$) <em>*</em></span><input class="in num" id="inValor" inputmode="decimal" placeholder="0,00"></label>
@@ -344,6 +366,8 @@ $("#frm").addEventListener("submit",async e=>{
   if(!data||data>hoje())mark($("#inData"),"Informe uma data válida (não pode ser futura).");
   const comb=document.querySelector("input[name=comb]:checked")?.value;
   if(!comb){$("#chips").classList.add("bad");errs.push("Escolha o combustível.");first=first||$("#chips")}
+  const pag=document.querySelector("input[name=pag]:checked")?.value;
+  if(!pag){$("#pays").classList.add("bad");errs.push("Informe quem pagou (empresa ou reembolso).");first=first||$("#pays")}
   const litros=parseNum($("#inLitros").value),valor=parseNum($("#inValor").value);
   if(!(litros>0&&litros<3000))mark($("#inLitros"),"Informe os litros.");
   if(!(valor>0&&valor<100000))mark($("#inValor"),"Informe o valor total.");
@@ -355,13 +379,14 @@ $("#frm").addEventListener("submit",async e=>{
   const er=$("#err");
   if(errs.length){er.hidden=false;er.textContent=errs[0]+(errs.length>1?` (+${errs.length-1})`:"");first?.scrollIntoView({behavior:"smooth",block:"center"});return}
   er.hidden=true;
-  const rec={id:uid(),data,motorista:mot,placa,modelo,posto,combustivel:comb,litros:Math.round(litros*1000)/1000,valor:Math.round(valor*100)/100,km,obs:$("#inObs").value.trim(),criadoEm:new Date().toISOString()};
+  const rec={id:uid(),data,motorista:mot,placa,modelo,posto,combustivel:comb,pagamento:pag,litros:Math.round(litros*1000)/1000,valor:Math.round(valor*100)/100,km,obs:$("#inObs").value.trim(),criadoEm:new Date().toISOString()};
   const btn=$("#btnSave");btn.disabled=true;btn.textContent="Salvando…";
   try{
     await filaAdd({rec,foto:{b64:FOTO.split(",")[1],mime:"image/jpeg"},tentativas:0});
   }catch(x){btn.disabled=false;btn.textContent="Salvar abastecimento";er.hidden=false;er.textContent="Não foi possível salvar no aparelho. Libere espaço e tente de novo.";return}
   addLocal("m",mot);addLocal("v",{placa,modelo});addLocal("p",posto);{const v=CAD.veiculos.find(x=>placaN(x.placa)===placaN(placa));if(v&&km>(v.ultimoKm||0)){v.ultimoKm=km;ls("verbo.cad",CAD)}}KM_OK="";
   ls("verbo.motorista",mot);ls("verbo.placa",placa);ls("verbo.comb",comb);
+  document.querySelectorAll("input[name=pag]").forEach(r=>r.checked=false);$("#payhint").hidden=true;
   const h=ls("verbo.hist")||[];h.unshift({...rec,st:"pend"});ls("verbo.hist",h.slice(0,40));
   // limpa para o próximo
   ["#inLitros","#inValor","#inKm","#inObs","#inMot","#inPlaca","#inModelo","#inPosto"].forEach(s=>$(s).value="");
@@ -414,7 +439,7 @@ async function renderHist(){
   const n=pend.length;
   $("#btnSync").hidden=!n;$("#btnSync").textContent=`Enviar agora (${n})`;
   setNetLabel(n);
-  $("#hist").innerHTML=h.length?h.slice(0,15).map(x=>`<div class="hi"><div class="d"><b>${fmtD(x.data)} · ${esc(fmtPlaca(x.placa))}</b><small>${esc(x.combustivel)} · ${String(x.litros).replace(".",",")} L · ${esc(x.posto)}</small>${x.msg&&x.st==="erro"?`<small style="color:var(--bad)">${esc(x.msg)}</small>`:""}</div><div class="v">${brl.format(x.valor)}<br><span class="st ${x.st}">${x.st==="ok"?"Enviado":x.st==="erro"?"Erro":"Aguardando internet"}</span></div></div>`).join("")
+  $("#hist").innerHTML=h.length?h.slice(0,15).map(x=>`<div class="hi"><div class="d"><b>${fmtD(x.data)} · ${esc(fmtPlaca(x.placa))}${x.pagamento==="Reembolso"?`<span class="tagr">Reembolso</span>`:""}</b><small>${esc(x.combustivel)} · ${String(x.litros).replace(".",",")} L · ${esc(x.posto)}</small>${x.msg&&x.st==="erro"?`<small style="color:var(--bad)">${esc(x.msg)}</small>`:""}</div><div class="v">${brl.format(x.valor)}<br><span class="st ${x.st}">${x.st==="ok"?"Enviado":x.st==="erro"?"Erro":"Aguardando internet"}</span></div></div>`).join("")
     :`<p class="muted" style="margin:0">Nenhum lançamento feito neste aparelho ainda.</p>`;
 }
 $("#btnSync").onclick=async()=>{const n=(await sync()).length;toast(n?`${n} lançamento(s) enviado(s).`:"Ainda sem conexão. Tentaremos de novo automaticamente.")};
@@ -430,6 +455,24 @@ addEventListener("offline",()=>setNet(false));
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)sync()});
 setInterval(()=>sync(),45000);
 
+$("#pays").addEventListener("change",()=>{$("#pays").classList.remove("bad");$("#payhint").hidden=document.querySelector("input[name=pag]:checked")?.value!=="Reembolso"});
+
+/* ---------- Instalar na tela inicial ---------- */
+let deferredPrompt=null;
+const standalone=matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
+const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+function installBanner(){
+  const host=$("#installHost");if(!host)return;
+  if(standalone||ls("verbo.installDismiss")){host.innerHTML="";return}
+  if(deferredPrompt){host.innerHTML=`<div class="install"><div><b>Instale o app no celular</b>Fica na tela inicial e abre sem internet.</div><button type="button" id="btnInst">Instalar</button><button type="button" class="x" id="instX" aria-label="Fechar">×</button></div>`;
+    $("#btnInst").onclick=async()=>{deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;installBanner()};}
+  else if(isIOS||/android/i.test(navigator.userAgent)){host.innerHTML=`<div class="install"><div><b>Coloque o app na tela inicial</b>Veja como em 3 passos.</div><a href="instalar.html${isIOS?"#iphone":"#android"}">Ver como</a><button type="button" class="x" id="instX" aria-label="Fechar">×</button></div>`;}
+  else{host.innerHTML="";return}
+  $("#instX").onclick=()=>{ls("verbo.installDismiss",1);installBanner()};
+}
+addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredPrompt=e;installBanner()});
+addEventListener("appinstalled",()=>{ls("verbo.installDismiss",1);installBanner()});
+
 /* ---------- Avisos ---------- */
 function banners(){
   let h="";
@@ -440,7 +483,7 @@ function banners(){
 /* ---------- Início ---------- */
 if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostname==="localhost"))navigator.serviceWorker.register("sw.js").catch(()=>{});
 if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
-banners();renderSelects();renderWho();onPlaca();calc();renderHist();setNetLabel();
+banners();installBanner();renderSelects();renderWho();onPlaca();calc();renderHist();setNetLabel();
 baixarCadastros().then(()=>sync());
 })();
 </script>
