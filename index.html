@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0B3B5A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Abastecimentos">
+<title>Abastecimentos · Verbo Logística</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<script src="config.js"></script>
+<style>
+:root{
+  --bg:#F2F5F7;--surface:#FFFFFF;--surface-2:#EBF0F3;--ink:#0E1E2B;--muted:#5A6A77;--line:#D7DFE5;
+  --brand:#0B3B5A;--brand-soft:#DCE8F0;--accent:#D99A06;--accent-ink:#2B1F00;--accent-soft:#FBEFCF;
+  --ok:#1E8257;--ok-soft:#DDF1E6;--warn:#B87407;--warn-soft:#FCEBCC;--bad:#B9382F;--bad-soft:#F8DEDB;
+  --header-bg:#0B3B5A;--header-ink:#fff;--header-muted:#A9C3D6;
+  --f:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--mono:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0A131A;--surface:#111D26;--surface-2:#172732;--ink:#E5ECF1;--muted:#93A5B2;--line:#243644;
+  --brand:#5FA8D3;--brand-soft:#16303F;--accent:#F0B429;--accent-ink:#231800;--accent-soft:#3A2D0C;
+  --ok:#4CC08A;--ok-soft:#123326;--warn:#E9A23B;--warn-soft:#3A2A0E;--bad:#EE7C72;--bad-soft:#3D1A17;
+  --header-bg:#0E2230;--header-ink:#E5ECF1;--header-muted:#88A3B6;color-scheme:dark}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.45 var(--f);-webkit-tap-highlight-color:transparent;padding-bottom:calc(96px + env(safe-area-inset-bottom))}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+header{background:var(--header-bg);color:var(--header-ink);padding:calc(10px + env(safe-area-inset-top)) 16px 12px;position:sticky;top:0;z-index:10}
+.hrow{display:flex;align-items:center;gap:12px;max-width:640px;margin:0 auto}
+.hrow img{height:34px;width:auto}
+.ttl{display:flex;flex-direction:column;line-height:1.1;flex:1;min-width:0}
+.ttl b{font-size:17px;letter-spacing:.01em}
+.ttl span{font-size:11px;color:var(--header-muted);letter-spacing:.1em;text-transform:uppercase}
+.net{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:5px 10px;border-radius:999px;background:rgba(255,255,255,.1);white-space:nowrap;border:0;color:inherit;cursor:pointer}
+.net i{width:8px;height:8px;border-radius:50%;background:#7EE0B0}
+.net.off i{background:#F0B429}
+main{max-width:640px;margin:0 auto;padding:14px 14px 0}
+.banner{border-radius:10px;padding:10px 12px;font-size:14px;margin-bottom:12px;border:1px solid}
+.banner.warn{background:var(--warn-soft);border-color:var(--warn)}
+.banner.bad{background:var(--bad-soft);border-color:var(--bad)}
+.banner.info{background:var(--brand-soft);border-color:var(--brand)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+.card h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--brand);margin:0 0 10px;font-weight:700}
+.f{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.f:last-child{margin-bottom:0}
+.f>span{font-size:13px;font-weight:600;color:var(--muted)}
+.f>span em{font-style:normal;color:var(--accent);font-weight:700}
+.in{width:100%;min-height:48px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:16px}
+select.in{appearance:none;-webkit-appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 18px) 21px,calc(100% - 13px) 21px;background-size:5px 5px;background-repeat:no-repeat;padding-right:34px}
+.in:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft)}
+.in.bad{border-color:var(--bad);box-shadow:0 0 0 3px var(--bad-soft)}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.newbox{display:flex;flex-direction:column;gap:8px;padding:10px;border:1.5px dashed var(--accent);border-radius:10px;background:var(--accent-soft)}
+.newbox small{font-size:12px;color:var(--muted)}
+.lnk{background:none;border:0;color:var(--brand);font-weight:600;font-size:14px;padding:4px 0;cursor:pointer;text-align:left}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{position:relative}
+.chip input{position:absolute;opacity:0;inset:0}
+.chip span{display:inline-flex;align-items:center;min-height:42px;padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-size:15px;font-weight:500;cursor:pointer}
+.chip input:checked+span{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:600}
+@media (prefers-color-scheme:dark){.chip input:checked+span{color:#06131C}}
+.chip input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
+.chips.bad .chip span{border-color:var(--bad)}
+.calc{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:10px;background:var(--surface-2);font-size:14px}
+.calc b{font-family:var(--mono);font-size:17px}
+.calc.warn{background:var(--warn-soft);color:var(--ink)}
+.photo{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pbtn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:88px;border:1.5px dashed var(--line);border-radius:12px;background:var(--surface-2);font-weight:600;font-size:14px;color:var(--brand);cursor:pointer;padding:8px}
+.pbtn.bad{border-color:var(--bad)}
+.prev{position:relative;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:#000;max-height:340px;display:flex;justify-content:center}
+.prev img{max-width:100%;max-height:340px;object-fit:contain;display:block}
+.prev button{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.65);color:#fff;border:0;border-radius:999px;padding:8px 12px;font-size:13px;font-weight:600;cursor:pointer}
+.err{color:var(--bad);font-size:14px;font-weight:600;margin:0 0 10px}
+.savebar{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);padding:10px 14px calc(10px + env(safe-area-inset-bottom));z-index:9}
+.savebar div{max-width:640px;margin:0 auto}
+.btn{width:100%;min-height:54px;border:0;border-radius:12px;background:var(--accent);color:var(--accent-ink);font-weight:700;font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px}
+.btn:disabled{opacity:.6}
+.btn2{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 14px;font-weight:600;cursor:pointer}
+.hist{display:flex;flex-direction:column}
+.hi{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.hi:last-child{border-bottom:0}
+.hi .d{flex:1;min-width:0}
+.hi .d b{display:block;font-size:15px}
+.hi .d small{color:var(--muted);font-size:13px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hi .v{font-family:var(--mono);font-weight:600;text-align:right}
+.st{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;margin-top:3px;font-family:var(--f)}
+.st.ok{background:var(--ok-soft);color:var(--ok)}
+.st.pend{background:var(--warn-soft);color:var(--warn)}
+.st.erro{background:var(--bad-soft);color:var(--bad)}
+.muted{color:var(--muted);font-size:14px}
+.done{position:fixed;inset:0;background:rgba(6,16,24,.55);z-index:30;display:flex;align-items:center;justify-content:center;padding:20px}
+.done div{background:var(--surface);border-radius:18px;padding:26px 22px;text-align:center;max-width:360px;width:100%}
+.done svg{color:var(--ok)}
+.done h3{margin:8px 0 6px;font-size:21px}
+.done p{margin:0 0 18px;color:var(--muted)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:14px;font-weight:600;z-index:40;max-width:92vw;text-align:center}
+.who{display:flex;align-items:center;gap:10px}
+.who .av{width:42px;height:42px;border-radius:50%;background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;flex:none}
+@media (prefers-color-scheme:dark){.who .av{color:#06131C}}
+.who b{display:block}
+.who small{color:var(--muted)}
+.who .lnk{margin-left:auto}
+</style>
+</head>
+<body>
+<header>
+  <div class="hrow">
+    <img src="logo.png" alt="Verbo Logística">
+    <div class="ttl"><b>Abastecimentos</b><span>App do condutor</span></div>
+    <button class="net" id="net" type="button" aria-live="polite"><i></i><span>…</span></button>
+  </div>
+</header>
+
+<main>
+  <div id="banners"></div>
+
+  <form id="frm" novalidate autocomplete="off">
+    <section class="card" id="cardWho">
+      <h2>Condutor</h2>
+      <div id="whoView" hidden class="who"><div class="av" id="whoAv"></div><div><b id="whoName"></b><small>Condutor deste aparelho</small></div><button type="button" class="lnk" id="whoChange">Trocar</button></div>
+      <div id="whoEdit">
+        <label class="f"><span>Nome completo <em>*</em></span>
+          <select class="in" id="selMot"></select></label>
+        <div class="newbox" id="newMot" hidden>
+          <input class="in" id="inMot" placeholder="Digite seu nome completo" autocapitalize="words">
+          <small>Seu nome fica cadastrado. Nas próximas vezes é só selecionar.</small>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Veículo</h2>
+      <label class="f"><span>Placa <em>*</em></span>
+        <select class="in" id="selPlaca"></select></label>
+      <div class="newbox" id="newPlaca" hidden>
+        <input class="in num" id="inPlaca" placeholder="Placa (ex.: ABC1D23)" autocapitalize="characters" maxlength="8">
+        <input class="in" id="inModelo" placeholder="Modelo do veículo (ex.: Volvo FH 540)">
+        <small>Placa e modelo ficam cadastrados para as próximas vezes.</small>
+      </div>
+      <label class="f" id="lblModelo" hidden><span>Modelo</span>
+        <input class="in" id="outModelo" readonly tabindex="-1" style="background:var(--surface-2)"></label>
+    </section>
+
+    <section class="card">
+      <h2>Abastecimento</h2>
+      <div class="row2">
+        <label class="f"><span>Data <em>*</em></span><input class="in" type="date" id="inData"></label>
+        <label class="f"><span>Hodômetro (km) <em>*</em></span><input class="in num" id="inKm" inputmode="numeric" placeholder="Km do painel"></label>
+      </div>
+      <label class="f"><span>Posto <em>*</em></span>
+        <select class="in" id="selPosto"></select></label>
+      <div class="newbox" id="newPosto" hidden style="margin-bottom:12px">
+        <input class="in" id="inPosto" placeholder="Nome do posto e cidade (ex.: Posto Rota 364 – Cuiabá)" autocapitalize="words">
+        <small>O posto fica cadastrado para as próximas vezes.</small>
+      </div>
+      <div class="f"><span>Combustível <em>*</em></span>
+        <div class="chips" id="chips" role="radiogroup" aria-label="Tipo de combustível"></div></div>
+      <div class="row2">
+        <label class="f"><span>Litros <em>*</em></span><input class="in num" id="inLitros" inputmode="decimal" placeholder="0,000"></label>
+        <label class="f"><span>Valor total (R$) <em>*</em></span><input class="in num" id="inValor" inputmode="decimal" placeholder="0,00"></label>
+      </div>
+      <div class="calc" id="calc"><span>Preço por litro</span><b>—</b></div>
+    </section>
+
+    <section class="card">
+      <h2>Foto do comprovante <em style="color:var(--accent);font-style:normal">*</em></h2>
+      <div class="photo" id="pBtns">
+        <label class="pbtn" id="pCam"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.5"/></svg>Tirar foto<input type="file" accept="image/*" capture="environment" id="fCam" hidden></label>
+        <label class="pbtn" id="pGal"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></svg>Da galeria<input type="file" accept="image/*" id="fGal" hidden></label>
+      </div>
+      <div class="prev" id="prev" hidden><img id="prevImg" alt="Comprovante"><button type="button" id="pRm">Trocar foto</button></div>
+      <label class="f" style="margin-top:12px"><span>Observação</span><textarea class="in" id="inObs" rows="2" placeholder="Opcional"></textarea></label>
+    </section>
+
+    <section class="card">
+      <h2 style="display:flex;justify-content:space-between;align-items:center">Meus lançamentos <button type="button" class="btn2" id="btnSync" style="font-size:13px;padding:6px 12px;text-transform:none;letter-spacing:0">Enviar agora</button></h2>
+      <div class="hist" id="hist"></div>
+    </section>
+  </form>
+</main>
+
+<div class="savebar"><div><p class="err" id="err" hidden></p><button class="btn" form="frm" type="submit" id="btnSave">Salvar abastecimento</button></div></div>
+<div id="host"></div>
+
+<script>
+(function(){
+"use strict";
+const CFG=window.VERBO_CFG||{};
+const API=CFG.API_URL||"";const TOKEN=CFG.APP_TOKEN||"";
+const CONFIGURADO=/^(https:\/\/|http:\/\/(localhost|127\.))/.test(API);
+const FUEIS=["Diesel S10","Diesel S500","Gasolina comum","Gasolina aditivada","Etanol","GNV","ARLA 32"];
+const NOVO="__novo__";
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const brl=new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"});
+const pad=n=>String(n).padStart(2,"0");
+const hoje=()=>{const d=new Date();return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`};
+const fmtD=s=>s?`${s.slice(8,10)}/${s.slice(5,7)}`:"";
+const chave=s=>String(s||"").trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/\s+/g," ");
+const placaN=s=>String(s||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
+const placaOk=p=>/^[A-Z]{3}\d[A-Z0-9]\d{2}$/.test(p);
+const nomeFmt=s=>String(s||"").trim().replace(/\s+/g," ").toLowerCase().replace(/(^|\s)(\S)/g,(m,a,b)=>a+b.toUpperCase()).replace(/\b(Da|De|Do|Das|Dos|E)\b/g,m=>m.toLowerCase());
+const uid=()=>Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,10);
+function ls(k,v){try{if(v===undefined){const x=localStorage.getItem(k);return x?JSON.parse(x):null}localStorage.setItem(k,JSON.stringify(v))}catch(e){return null}}
+function parseNum(s){s=String(s||"").trim().replace(/R\$|\s/g,"");if(!s)return NaN;if(s.includes(","))s=s.replace(/\./g,"").replace(",",".");return Number(s)}
+function toast(m){const t=document.createElement("div");t.className="toast";t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),3200)}
+
+/* ---------- IndexedDB (fila offline) ---------- */
+let _db;
+function idb(){return _db||(_db=new Promise((ok,no)=>{const r=indexedDB.open("verbo-abast",1);r.onupgradeneeded=()=>r.result.createObjectStore("fila",{keyPath:"rec.id"});r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)}))}
+async function tx(mode,fn){const db=await idb();return new Promise((ok,no)=>{const t=db.transaction("fila",mode);const st=t.objectStore("fila");const r=fn(st);t.oncomplete=()=>ok(r&&r.result);t.onerror=()=>no(t.error)})}
+const filaAdd=it=>tx("readwrite",s=>s.put(it));
+const filaDel=id=>tx("readwrite",s=>s.delete(id));
+const filaAll=()=>tx("readonly",s=>s.getAll());
+
+/* ---------- Cadastros (servidor + locais) ---------- */
+let CAD=ls("verbo.cad")||{motoristas:[],veiculos:[],postos:[]};
+function addLocal(tipo,v){
+  if(tipo==="m"&&!CAD.motoristas.some(x=>chave(x)===chave(v)))CAD.motoristas.push(v);
+  if(tipo==="p"&&!CAD.postos.some(x=>chave(x)===chave(v)))CAD.postos.push(v);
+  if(tipo==="v"){const e=CAD.veiculos.find(x=>placaN(x.placa)===placaN(v.placa));if(!e)CAD.veiculos.push(v);else if(!e.modelo&&v.modelo)e.modelo=v.modelo}
+  ls("verbo.cad",CAD);
+}
+async function baixarCadastros(){
+  if(!CONFIGURADO)return;
+  try{
+    const r=await fetch(API+"?a=cad&t="+encodeURIComponent(TOKEN),{cache:"no-store"});const j=await r.json();
+    if(!j.ok)return;
+    // mantém os itens criados no aparelho e ainda não enviados
+    const pend=await filaAll();
+    const keep={m:pend.map(p=>p.rec.motorista),p:pend.map(p=>p.rec.posto),v:pend.map(p=>({placa:p.rec.placa,modelo:p.rec.modelo}))};
+    CAD={motoristas:j.motoristas||[],veiculos:j.veiculos||[],postos:j.postos||[]};
+    keep.m.forEach(v=>addLocal("m",v));keep.p.forEach(v=>addLocal("p",v));keep.v.forEach(v=>addLocal("v",v));
+    ls("verbo.cad",CAD);renderSelects();
+  }catch(e){}
+}
+
+/* ---------- Selects com "cadastrar novo" ---------- */
+const sortPt=a=>[...a].sort((x,y)=>String(x).localeCompare(String(y),"pt-BR"));
+function fill(sel,opts,ph,novoTxt){
+  const v=sel.value;
+  sel.innerHTML=`<option value="">${ph}</option>`+opts.map(o=>`<option value="${esc(o.v)}">${esc(o.t)}</option>`).join("")+`<option value="${NOVO}">＋ ${novoTxt}</option>`;
+  if([...sel.options].some(o=>o.value===v))sel.value=v;
+}
+function renderSelects(){
+  fill($("#selMot"),sortPt(CAD.motoristas).map(n=>({v:n,t:n})),"Selecione seu nome","Meu nome não está na lista");
+  fill($("#selPlaca"),[...CAD.veiculos].sort((a,b)=>a.placa.localeCompare(b.placa)).map(x=>({v:x.placa,t:fmtPlaca(x.placa)+(x.modelo?" · "+x.modelo:"")})),"Selecione a placa","Cadastrar nova placa");
+  fill($("#selPosto"),sortPt(CAD.postos).map(n=>({v:n,t:n})),"Selecione o posto","Cadastrar novo posto");
+  restoreLast();
+}
+const fmtPlaca=p=>{p=placaN(p);return p.length===7?p.slice(0,3)+"-"+p.slice(3):p};
+function bindNovo(sel,box,focus){
+  sel.addEventListener("change",()=>{box.hidden=sel.value!==NOVO;if(sel.value===NOVO)setTimeout(()=>focus.focus(),30);onPlaca()});
+}
+bindNovo($("#selMot"),$("#newMot"),$("#inMot"));
+bindNovo($("#selPlaca"),$("#newPlaca"),$("#inPlaca"));
+bindNovo($("#selPosto"),$("#newPosto"),$("#inPosto"));
+function onPlaca(){
+  const v=$("#selPlaca").value;const x=CAD.veiculos.find(c=>c.placa===v);
+  $("#lblModelo").hidden=!(x&&x.modelo);$("#outModelo").value=x?.modelo||"";
+}
+$("#inPlaca").addEventListener("input",e=>{const p=placaN(e.target.value);const ex=CAD.veiculos.find(c=>placaN(c.placa)===p);if(ex&&p.length===7){$("#selPlaca").value=ex.placa;$("#newPlaca").hidden=true;onPlaca();toast("Placa já cadastrada — selecionada.")}});
+
+/* ---------- Condutor fixo no aparelho ---------- */
+function renderWho(){
+  const n=ls("verbo.motorista");
+  $("#whoView").hidden=!n;$("#whoEdit").hidden=!!n;
+  if(n){$("#whoName").textContent=n;$("#whoAv").textContent=n.split(" ").filter(Boolean).slice(0,2).map(p=>p[0]).join("").toUpperCase();$("#selMot").value=n}
+}
+$("#whoChange").onclick=()=>{ls("verbo.motorista",null);try{localStorage.removeItem("verbo.motorista")}catch(e){};$("#selMot").value="";renderWho()};
+function restoreLast(){
+  const n=ls("verbo.motorista");if(n&&[...$("#selMot").options].some(o=>o.value===n))$("#selMot").value=n;
+  const p=ls("verbo.placa");if(p&&!$("#selPlaca").value&&[...$("#selPlaca").options].some(o=>o.value===p)){$("#selPlaca").value=p;onPlaca()}
+}
+
+/* ---------- Combustível ---------- */
+$("#chips").innerHTML=FUEIS.map((f,i)=>`<label class="chip"><input type="radio" name="comb" value="${esc(f)}"><span>${esc(f)}</span></label>`).join("");
+const lastComb=ls("verbo.comb");if(lastComb){const r=[...document.querySelectorAll("input[name=comb]")].find(x=>x.value===lastComb);if(r)r.checked=true}
+
+/* ---------- Preço por litro ---------- */
+function calc(){
+  const l=parseNum($("#inLitros").value),v=parseNum($("#inValor").value);const el=$("#calc");
+  if(l>0&&v>0){const p=v/l;const c=document.querySelector("input[name=comb]:checked")?.value||"";
+    const fora=c==="ARLA 32"?(p<1.5||p>8):(p<3||p>12);
+    el.classList.toggle("warn",fora);
+    el.innerHTML=`<span>${fora?"Confira litros e valor — preço fora do comum":"Preço por litro"}</span><b>${brl.format(p)}</b>`}
+  else{el.classList.remove("warn");el.innerHTML=`<span>Preço por litro</span><b>—</b>`}
+}
+["#inLitros","#inValor"].forEach(s=>$(s).addEventListener("input",calc));
+$("#chips").addEventListener("change",calc);
+
+/* ---------- Foto ---------- */
+let FOTO=null;let KM_OK="";
+async function comprimir(file){
+  const url=URL.createObjectURL(file);
+  try{
+    const img=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=no;i.src=url});
+    const M=1600,k=Math.min(1,M/Math.max(img.naturalWidth,img.naturalHeight));
+    const c=document.createElement("canvas");c.width=Math.round(img.naturalWidth*k);c.height=Math.round(img.naturalHeight*k);
+    const g=c.getContext("2d");g.fillStyle="#fff";g.fillRect(0,0,c.width,c.height);g.drawImage(img,0,0,c.width,c.height);
+    return c.toDataURL("image/jpeg",0.72);
+  }finally{URL.revokeObjectURL(url)}
+}
+async function onFoto(e){
+  const f=e.target.files&&e.target.files[0];e.target.value="";if(!f)return;
+  if(!f.type.startsWith("image/")){toast("Envie uma foto (imagem).");return}
+  try{FOTO=await comprimir(f)}catch(x){toast("Não consegui ler essa foto. Tente tirar outra.");return}
+  $("#prevImg").src=FOTO;$("#prev").hidden=false;$("#pBtns").hidden=true;
+  document.querySelectorAll(".pbtn").forEach(b=>b.classList.remove("bad"));
+}
+$("#fCam").addEventListener("change",onFoto);$("#fGal").addEventListener("change",onFoto);
+$("#pRm").onclick=()=>{FOTO=null;$("#prev").hidden=true;$("#pBtns").hidden=false};
+
+/* ---------- Salvar ---------- */
+$("#inData").value=hoje();$("#inData").max=hoje();
+$("#frm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  document.querySelectorAll(".bad").forEach(x=>x.classList.remove("bad"));
+  const errs=[];const bad=el=>{el.classList.add("bad");return el};
+  let first=null;const mark=(el,msg)=>{bad(el);errs.push(msg);first=first||el};
+  // condutor
+  let mot=$("#selMot").value;
+  if(mot===NOVO){mot=nomeFmt($("#inMot").value);if(mot.split(" ").length<2)mark($("#inMot"),"Informe seu nome completo (nome e sobrenome).")}
+  else if(!mot)mark($("#selMot"),"Selecione seu nome.");
+  // placa
+  let placa=$("#selPlaca").value,modelo="";
+  if(placa===NOVO){placa=placaN($("#inPlaca").value);modelo=$("#inModelo").value.trim().replace(/\s+/g," ");
+    if(!placaOk(placa))mark($("#inPlaca"),"Placa inválida (use o formato ABC1D23 ou ABC1234).");
+    if(!modelo)mark($("#inModelo"),"Informe o modelo do veículo.");}
+  else if(!placa)mark($("#selPlaca"),"Selecione a placa.");
+  else modelo=CAD.veiculos.find(x=>x.placa===placa)?.modelo||"";
+  // posto
+  let posto=$("#selPosto").value;
+  if(posto===NOVO){posto=$("#inPosto").value.trim().replace(/\s+/g," ");if(posto.length<3)mark($("#inPosto"),"Informe o nome do posto.")}
+  else if(!posto)mark($("#selPosto"),"Selecione o posto.");
+  const data=$("#inData").value;
+  if(!data||data>hoje())mark($("#inData"),"Informe uma data válida (não pode ser futura).");
+  const comb=document.querySelector("input[name=comb]:checked")?.value;
+  if(!comb){$("#chips").classList.add("bad");errs.push("Escolha o combustível.");first=first||$("#chips")}
+  const litros=parseNum($("#inLitros").value),valor=parseNum($("#inValor").value);
+  if(!(litros>0&&litros<3000))mark($("#inLitros"),"Informe os litros.");
+  if(!(valor>0&&valor<100000))mark($("#inValor"),"Informe o valor total.");
+  const kmS=$("#inKm").value.replace(/\D/g,"");const km=kmS?Number(kmS):0;
+  if(!(km>0&&km<5000000))mark($("#inKm"),"Informe o hodômetro (km do painel do veículo).");
+  else if(placa&&placa!==NOVO){const ult=(CAD.veiculos.find(x=>placaN(x.placa)===placaN(placa))||{}).ultimoKm;
+    if(ult&&km<ult&&KM_OK!==placa+"|"+km){KM_OK=placa+"|"+km;mark($("#inKm"),`O último km desta placa foi ${ult.toLocaleString("pt-BR")}. Confira o hodômetro — se estiver certo, toque em Salvar de novo.`)}}
+  if(!FOTO){document.querySelectorAll(".pbtn").forEach(b=>b.classList.add("bad"));errs.push("Anexe a foto do comprovante.");first=first||$("#pCam")}
+  const er=$("#err");
+  if(errs.length){er.hidden=false;er.textContent=errs[0]+(errs.length>1?` (+${errs.length-1})`:"");first?.scrollIntoView({behavior:"smooth",block:"center"});return}
+  er.hidden=true;
+  const rec={id:uid(),data,motorista:mot,placa,modelo,posto,combustivel:comb,litros:Math.round(litros*1000)/1000,valor:Math.round(valor*100)/100,km,obs:$("#inObs").value.trim(),criadoEm:new Date().toISOString()};
+  const btn=$("#btnSave");btn.disabled=true;btn.textContent="Salvando…";
+  try{
+    await filaAdd({rec,foto:{b64:FOTO.split(",")[1],mime:"image/jpeg"},tentativas:0});
+  }catch(x){btn.disabled=false;btn.textContent="Salvar abastecimento";er.hidden=false;er.textContent="Não foi possível salvar no aparelho. Libere espaço e tente de novo.";return}
+  addLocal("m",mot);addLocal("v",{placa,modelo});addLocal("p",posto);{const v=CAD.veiculos.find(x=>placaN(x.placa)===placaN(placa));if(v&&km>(v.ultimoKm||0)){v.ultimoKm=km;ls("verbo.cad",CAD)}}KM_OK="";
+  ls("verbo.motorista",mot);ls("verbo.placa",placa);ls("verbo.comb",comb);
+  const h=ls("verbo.hist")||[];h.unshift({...rec,st:"pend"});ls("verbo.hist",h.slice(0,40));
+  // limpa para o próximo
+  ["#inLitros","#inValor","#inKm","#inObs","#inMot","#inPlaca","#inModelo","#inPosto"].forEach(s=>$(s).value="");
+  ["#newMot","#newPlaca","#newPosto"].forEach(s=>$(s).hidden=true);
+  $("#selPosto").value="";$("#selPlaca").value="";$("#selMot").value="";FOTO=null;$("#prev").hidden=true;$("#pBtns").hidden=false;$("#inData").value=hoje();
+  renderSelects();renderWho();calc();renderHist();
+  btn.disabled=false;btn.textContent="Salvar abastecimento";
+  const enviado=await sync();
+  showDone(enviado.includes(rec.id));
+});
+
+function showDone(env){
+  $("#host").innerHTML=`<div class="done" role="dialog" aria-modal="true"><div>
+    <svg width="64" height="64" viewBox="0 0 64 64" fill="none" aria-hidden="true"><circle cx="32" cy="32" r="30" fill="currentColor" opacity=".14"/><path d="M19 33l9 9 17-19" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <h3>${env?"Abastecimento enviado!":"Salvo no celular"}</h3>
+    <p>${env?"O lançamento já chegou para a gestão.":"Você está sem internet agora. O envio acontece sozinho assim que o sinal voltar — pode fechar o app."}</p>
+    <button class="btn" type="button" id="okDone">OK</button></div></div>`;
+  $("#okDone").onclick=()=>{$("#host").innerHTML="";window.scrollTo({top:0,behavior:"smooth"})};$("#okDone").focus();
+}
+
+/* ---------- Sincronização ---------- */
+let syncing=null;
+function sync(){
+  if(syncing)return syncing;
+  syncing=(async()=>{
+    const enviados=[];
+    if(!CONFIGURADO)return enviados;
+    let fila=[];try{fila=await filaAll()}catch(e){return enviados}
+    fila.sort((a,b)=>a.rec.criadoEm.localeCompare(b.rec.criadoEm));
+    for(const it of fila){
+      try{
+        const ctl=new AbortController();const to=setTimeout(()=>ctl.abort(),60000);
+        const r=await fetch(API,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({a:"add",t:TOKEN,rec:it.rec,foto:it.foto}),signal:ctl.signal});
+        clearTimeout(to);
+        const j=await r.json();
+        if(j.ok){await filaDel(it.rec.id);marcar(it.rec.id,"ok");enviados.push(it.rec.id)}
+        else{marcar(it.rec.id,"erro",j.erro);if(/Chave/.test(j.erro||""))break}
+      }catch(e){setNet(false);break}
+    }
+    if(enviados.length){setNet(true);baixarCadastros()}
+    await renderHist();
+    return enviados;
+  })().finally(()=>{syncing=null});
+  return syncing;
+}
+function marcar(id,st,msg){const h=ls("verbo.hist")||[];const x=h.find(i=>i.id===id);if(x){x.st=st;x.msg=msg||""}ls("verbo.hist",h)}
+async function renderHist(){
+  let pend=[];try{pend=(await filaAll()).map(x=>x.rec.id)}catch(e){}
+  const h=(ls("verbo.hist")||[]).map(x=>({...x,st:pend.includes(x.id)?(x.st==="erro"?"erro":"pend"):"ok"}));
+  const n=pend.length;
+  $("#btnSync").hidden=!n;$("#btnSync").textContent=`Enviar agora (${n})`;
+  setNetLabel(n);
+  $("#hist").innerHTML=h.length?h.slice(0,15).map(x=>`<div class="hi"><div class="d"><b>${fmtD(x.data)} · ${esc(fmtPlaca(x.placa))}</b><small>${esc(x.combustivel)} · ${String(x.litros).replace(".",",")} L · ${esc(x.posto)}</small>${x.msg&&x.st==="erro"?`<small style="color:var(--bad)">${esc(x.msg)}</small>`:""}</div><div class="v">${brl.format(x.valor)}<br><span class="st ${x.st}">${x.st==="ok"?"Enviado":x.st==="erro"?"Erro":"Aguardando internet"}</span></div></div>`).join("")
+    :`<p class="muted" style="margin:0">Nenhum lançamento feito neste aparelho ainda.</p>`;
+}
+$("#btnSync").onclick=async()=>{const n=(await sync()).length;toast(n?`${n} lançamento(s) enviado(s).`:"Ainda sem conexão. Tentaremos de novo automaticamente.")};
+
+/* ---------- Status de conexão ---------- */
+let online=navigator.onLine;
+function setNet(v){online=v;setNetLabel()}
+let _pend=0;
+function setNetLabel(n){if(n!=null)_pend=n;const el=$("#net");el.classList.toggle("off",!online);el.querySelector("span").textContent=online?(_pend?`Online · ${_pend} na fila`:"Online"):(_pend?`Offline · ${_pend} na fila`:"Offline")}
+$("#net").onclick=()=>sync();
+addEventListener("online",()=>{setNet(true);sync()});
+addEventListener("offline",()=>setNet(false));
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)sync()});
+setInterval(()=>sync(),45000);
+
+/* ---------- Avisos ---------- */
+function banners(){
+  let h="";
+  if(!CONFIGURADO)h+=`<div class="banner warn"><b>App ainda não conectado.</b> Os lançamentos ficam salvos no celular até a gestão concluir a configuração (config.js).</div>`;
+  $("#banners").innerHTML=h;
+}
+
+/* ---------- Início ---------- */
+if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostname==="localhost"))navigator.serviceWorker.register("sw.js").catch(()=>{});
+if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
+banners();renderSelects();renderWho();onPlaca();calc();renderHist();setNetLabel();
+baixarCadastros().then(()=>sync());
+})();
+</script>
+</body>
+</html>
