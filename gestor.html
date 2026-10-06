@@ -80,7 +80,7 @@ label.f{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:60
 .eyebrow{font-family:var(--f-display);font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
 .actions{display:flex;gap:8px;flex-wrap:wrap}
 
-.filters{display:grid;grid-template-columns:2fr repeat(5,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.filters{display:grid;grid-template-columns:1.6fr repeat(6,minmax(0,1fr));gap:10px;margin-bottom:12px}
 .strip{display:flex;gap:28px;flex-wrap:wrap;padding:12px 16px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r) var(--r) 0 0;border-bottom:0}
 .strip div{display:flex;flex-direction:column}
 .strip small{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
@@ -99,6 +99,10 @@ td.r,th.r{text-align:right}
 .fuel i{width:8px;height:8px;border-radius:2px;display:inline-block}
 .clip{display:inline-flex;align-items:center;gap:4px;color:var(--brand);font-size:12px;font-weight:600}
 .clip.none{color:var(--muted);font-weight:400}
+.pg{display:inline-block;font-size:11.5px;font-weight:700;padding:2px 9px;border-radius:999px;white-space:nowrap}
+.pg-e{background:var(--surface-2);color:var(--muted)}
+.pg-r{background:var(--accent-soft);color:var(--ink);box-shadow:inset 0 0 0 1px var(--accent)}
+.cnt{display:inline-flex;min-width:20px;height:20px;align-items:center;justify-content:center;border-radius:999px;background:var(--accent-ink);color:var(--accent);font-size:11px;font-weight:700;padding:0 6px}
 .flag{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.04em;padding:1px 7px;border-radius:999px;background:var(--warn-soft);color:var(--warn);margin-left:6px;vertical-align:middle}
 .empty{padding:56px 24px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px}
 .empty h3{font-family:var(--f-display);font-size:20px;margin:0}
@@ -139,7 +143,7 @@ legend{font-family:var(--f-display);font-weight:700;font-size:12px;letter-spacin
 .rep-id h1{font-family:var(--f-display);font-size:26px;font-weight:800;margin:2px 0 0;letter-spacing:-.01em}
 .rep-meta{text-align:right;font-size:12px;color:var(--header-muted);padding-right:10px}
 .rep-meta b{display:block;color:var(--header-ink);font-family:var(--f-mono);font-size:13px;font-weight:500}
-.rep-filters{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;margin-bottom:16px;align-items:end}
+.rep-filters{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:10px;margin-bottom:16px;align-items:end}
 .kpis{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:12px;margin-bottom:14px}
 .kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px 16px 14px;display:flex;flex-direction:column;gap:4px;min-width:0}
 .kpi small{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600}
@@ -279,7 +283,7 @@ legend{font-family:var(--f-display);font-weight:700;font-size:12px;letter-spacin
   <section id="view-lanc">
     <div class="phead">
       <div><div class="eyebrow">Frota · registros dos condutores</div><h1>Lançamentos de abastecimento</h1><p>Tudo o que os condutores enviaram pelo app. Clique em uma linha para ver a foto, corrigir ou excluir.</p></div>
-      <div class="actions"><a class="btn" id="lnkPlan" target="_blank" rel="noopener" hidden>Abrir planilha ↗</a><button class="btn" id="btnCsv" type="button">Exportar CSV</button></div>
+      <div class="actions"><a class="btn" id="lnkPlan" target="_blank" rel="noopener" hidden>Abrir planilha ↗</a><button class="btn" id="btnCsv" type="button">Exportar CSV</button><button class="btn" id="btnExp" type="button">Enviar p/ Reembolsos</button></div>
     </div>
     <div class="filters">
       <input class="in q" id="fQ" type="search" placeholder="Buscar motorista, placa, posto, observação…" aria-label="Buscar">
@@ -288,6 +292,7 @@ legend{font-family:var(--f-display);font-weight:700;font-size:12px;letter-spacin
       <select class="in" id="fPla" aria-label="Veículo"><option value="">Todos os veículos</option></select>
       <select class="in" id="fCom" aria-label="Combustível"><option value="">Todos os combustíveis</option></select>
       <select class="in" id="fPos" aria-label="Posto"><option value="">Todos os postos</option></select>
+      <select class="in" id="fPag" aria-label="Pagamento"><option value="">Empresa e reembolso</option><option value="Empresa">Pago pela empresa</option><option value="Reembolso">Pago pelo condutor (reembolso)</option><option value="pend">Reembolso a enviar</option></select>
     </div>
     <div class="strip" id="strip"></div>
     <div class="tbl-wrap" id="listWrap"></div>
@@ -310,6 +315,7 @@ legend{font-family:var(--f-display);font-weight:700;font-size:12px;letter-spacin
       <label class="f">Motorista<select class="in" id="rMot"><option value="">Todos</option></select></label>
       <label class="f">Combustível<select class="in" id="rCom"><option value="">Todos</option></select></label>
       <label class="f">Posto<select class="in" id="rPos"><option value="">Todos</option></select></label>
+      <label class="f">Pagamento<select class="in" id="rPag"><option value="">Todos</option><option value="Empresa">Empresa</option><option value="Reembolso">Reembolso</option></select></label>
     </div>
     <div id="dashBody"></div>
   </section>
