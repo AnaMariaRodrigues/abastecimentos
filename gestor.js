@@ -30,7 +30,7 @@ function toast(m){const t=document.createElement("div");t.className="toast";t.te
 function parseNum(s){s=String(s??"").trim().replace(/R\$|\s/g,"");if(!s)return NaN;if(s.includes(","))s=s.replace(/\./g,"").replace(",",".");return Number(s)}
 
 const S={key:null,demo:false,items:[],cad:[],planilha:"",agora:null,tab:ls("verbo.g.tab")||"dash",
-  f:{q:"",mes:"",mot:"",pla:"",com:"",pos:""},r:{per:"mes",de:"",ate:"",pla:"",mot:"",com:"",pos:""},
+  f:{q:"",mes:"",mot:"",pla:"",com:"",pos:"",pag:""},r:{per:"mes",de:"",ate:"",pla:"",mot:"",com:"",pos:"",pag:""},
   gran:"auto",fuelPosto:"",charts:{},fotos:{},edit:null,cadEdit:null,loading:false,err:null};
 
 /* ---------------- API ---------------- */
@@ -46,7 +46,7 @@ async function carregar(silencioso){
   finally{S.loading=false}
   renderAll();
 }
-function norm(x){return {...x,litros:Number(x.litros)||0,valor:Number(x.valor)||0,km:x.km===""||x.km==null?null:Number(x.km),precoLitro:Number(x.precoLitro)||(x.litros?x.valor/x.litros:0)}}
+function norm(x){return {...x,pagamento:x.pagamento==="Reembolso"?"Reembolso":"Empresa",litros:Number(x.litros)||0,valor:Number(x.valor)||0,km:x.km===""||x.km==null?null:Number(x.km),precoLitro:Number(x.precoLitro)||(x.litros?x.valor/x.litros:0)}}
 function cadDe(items){const c=[];const add=(t,n,d)=>{if(n&&!c.some(x=>x.tipo===t&&x.nome===n))c.push({tipo:t,nome:n,detalhe:d||"",ativo:true})};items.forEach(i=>{add("Motorista",i.motorista);add("Veículo",i.placa,i.modelo);add("Posto",i.posto)});return c}
 
 /* ---------------- Login ---------------- */
@@ -101,11 +101,12 @@ function refreshSelects(){
 const fuelColor=f=>{const i=FUEIS.indexOf(f);return css("--c"+((i<0?7:i)%8+1))};
 
 /* ================= LANÇAMENTOS ================= */
-const fmap={fQ:"q",fMes:"mes",fMot:"mot",fPla:"pla",fCom:"com",fPos:"pos"};
+const fmap={fQ:"q",fMes:"mes",fMot:"mot",fPla:"pla",fCom:"com",fPos:"pos",fPag:"pag"};
 Object.keys(fmap).forEach(id=>$("#"+id).addEventListener("input",e=>{S.f[fmap[id]]=e.target.value;renderList()}));
+function pagOk(i,p){return !p||(p==="pend"?i.pagamento==="Reembolso"&&!i.exportadoEm:i.pagamento===p)}
 function listFiltered(){
   const f=S.f,q=f.q.trim().toLowerCase();
-  return S.items.filter(i=>(!f.mes||i.data.startsWith(f.mes))&&(!f.mot||i.motorista===f.mot)&&(!f.pla||i.placa===f.pla)&&(!f.com||i.combustivel===f.com)&&(!f.pos||i.posto===f.pos)
+  return S.items.filter(i=>(!f.mes||i.data.startsWith(f.mes))&&(!f.mot||i.motorista===f.mot)&&(!f.pla||i.placa===f.pla)&&(!f.com||i.combustivel===f.com)&&(!f.pos||i.posto===f.pos)&&pagOk(i,f.pag)
     &&(!q||[i.motorista,i.placa,fmtPlaca(i.placa),i.modelo,i.posto,i.combustivel,i.obs].join(" ").toLowerCase().includes(q)))
     .sort((a,b)=>b.data.localeCompare(a.data)||String(b.criadoEm||"").localeCompare(String(a.criadoEm||"")));
 }
@@ -114,23 +115,53 @@ function renderList(){
     $("#listWrap").innerHTML=`<div class="empty"><h3>${S.loading?"Carregando…":"Nenhum abastecimento recebido ainda"}</h3><p>Assim que um condutor salvar um abastecimento no app (e tiver internet), ele aparece aqui automaticamente. Use <b>Atualizar</b> no topo para buscar novidades.</p></div>`;return}
   $("#strip").hidden=false;$("#listWrap").style.borderRadius="";
   const L=listFiltered();const lit=sum(L,i=>i.litros),val=sum(L,i=>i.valor);
-  $("#strip").innerHTML=`<div><small>Abastecimentos</small><strong>${L.length}</strong></div><div><small>Litros</small><strong>${nf(lit,1)} L</strong></div><div><small>Valor total</small><strong>${brl.format(val)}</strong></div><div><small>Preço médio / L</small><strong>${lit?brl3(val/lit):"—"}</strong></div>`;
+  $("#strip").innerHTML=`<div><small>Abastecimentos</small><strong>${L.length}</strong></div><div><small>Litros</small><strong>${nf(lit,1)} L</strong></div><div><small>Valor total</small><strong>${brl.format(val)}</strong></div><div><small>Preço médio / L</small><strong>${lit?brl3(val/lit):"—"}</strong></div><div><small>Pago por condutores (reembolso)</small><strong style="color:var(--warn)">${brl.format(sum(L.filter(i=>i.pagamento==="Reembolso"),i=>i.valor))}</strong></div>`;
+  updExport();
   if(!L.length){$("#listWrap").innerHTML=`<div class="empty"><h3>Nenhum lançamento com esses filtros</h3><p>Ajuste a busca ou limpe os filtros.</p></div>`;return}
   const flags=alertIds(S.items);
-  $("#listWrap").innerHTML=`<table><thead><tr><th>Data</th><th>Motorista</th><th>Veículo</th><th class="hide-sm">Posto</th><th>Combustível</th><th class="r">Litros</th><th class="r hide-sm">R$/L</th><th class="r">Valor</th><th class="r hide-sm">Hodômetro</th><th class="hide-sm">Foto</th></tr></thead><tbody>`+
+  $("#listWrap").innerHTML=`<table><thead><tr><th>Data</th><th>Motorista</th><th>Veículo</th><th class="hide-sm">Posto</th><th>Combustível</th><th class="r">Litros</th><th class="r hide-sm">R$/L</th><th class="r">Valor</th><th>Pagamento</th><th class="r hide-sm">Hodômetro</th><th class="hide-sm">Foto</th></tr></thead><tbody>`+
     L.map(i=>`<tr class="row" data-id="${esc(i.id)}"><td class="num">${fmtD(i.data)}</td><td><b style="font-weight:600">${esc(i.motorista)}</b></td>
       <td><span class="plate">${esc(fmtPlaca(i.placa))}</span>${i.modelo?`<div class="sub">${esc(i.modelo)}</div>`:""}</td>
       <td class="hide-sm">${esc(i.posto)}</td><td><span class="fuel"><i style="background:${fuelColor(i.combustivel)}"></i>${esc(i.combustivel)}</span></td>
       <td class="r num">${nf(i.litros,2)}</td><td class="r num hide-sm">${brl3(i.precoLitro)}${flags[i.id]?`<span class="flag" title="${esc(flags[i.id])}">!</span>`:""}</td>
-      <td class="r num"><b style="font-weight:600">${brl.format(i.valor)}</b></td><td class="r num hide-sm">${i.km!=null?nf(i.km):"<span class='sub'>—</span>"}</td>
+      <td class="r num"><b style="font-weight:600">${brl.format(i.valor)}</b></td><td>${pagPill(i)}</td><td class="r num hide-sm">${i.km!=null?nf(i.km):"<span class='sub'>—</span>"}</td>
       <td class="hide-sm">${i.fotoId?`<span class="clip">📎 ver</span>`:`<span class="clip none">sem foto</span>`}</td></tr>`).join("")+`</tbody></table>`;
 }
+function pagPill(i){return i.pagamento==="Reembolso"?`<span class="pg pg-r">Reembolso</span>${i.exportadoEm?`<div class="sub">✓ enviado ${fmtD(String(i.exportadoEm).slice(0,10))}</div>`:`<div class="sub" style="color:var(--warn)">a enviar</div>`}`:`<span class="pg pg-e">Empresa</span>`}
+const pendentesReemb=()=>S.items.filter(i=>i.pagamento==="Reembolso"&&!i.exportadoEm).sort((a,b)=>a.data.localeCompare(b.data));
+function updExport(){const n=pendentesReemb().length;const b=$("#btnExp");b.innerHTML=`Enviar p/ Reembolsos${n?` <span class="cnt">${n}</span>`:""}`;b.classList.toggle("primary",n>0)}
+$("#btnExp").onclick=()=>{
+  const P=pendentesReemb();
+  if(!P.length){toast("Nenhum abastecimento pago pelo condutor aguardando envio.");return}
+  const payload=JSON.stringify({fonte:"verbo-abastecimentos",versao:1,geradoEm:new Date().toISOString(),itens:P.map(i=>({id:i.id,data:i.data,motorista:i.motorista,valor:i.valor,posto:i.posto,placa:i.placa,modelo:i.modelo,combustivel:i.combustivel,litros:i.litros,km:i.km,fotoUrl:i.fotoUrl||"",obs:i.obs||""}))});
+  const tot=sum(P,i=>i.valor);
+  $("#drawerHost").innerHTML=`<div class="scrim" data-close></div><aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="xT">
+    <header><div><div class="eyebrow">Integração com Reembolsos</div><h2 id="xT">${P.length} abastecimento${P.length>1?"s":""} · ${brl.format(tot)}</h2></div><button class="btn sm" type="button" data-close>Fechar</button></header>
+    <div class="body">
+      <fieldset><legend>Como enviar</legend><ol class="span2" style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px">
+        <li>Clique em <b>Copiar dados</b> (já copiamos para você agora).</li>
+        <li>Abra o app de <b>Reembolsos</b> e clique em <b>Importar abastecimentos</b>.</li>
+        <li>Cole (Ctrl+V) e confirme. Cada abastecimento vira um lançamento <i>Pendente</i> na categoria Combustível, com o link da foto.</li>
+        <li>Volte aqui e clique em <b>Já importei</b> para marcar como enviados.</li></ol>
+        <p class="sub span2" style="margin:0">Se importar duas vezes por engano, o app de Reembolsos ignora os repetidos.</p></fieldset>
+      <fieldset><legend>Abastecimentos</legend><div class="span2" style="overflow-x:auto"><table class="mini"><thead><tr><th>Data</th><th>Motorista</th><th>Veículo</th><th class="r">Valor</th></tr></thead><tbody>${P.map(i=>`<tr><td class="num">${fmtD(i.data)}</td><td>${esc(i.motorista)}</td><td><span class="plate">${esc(fmtPlaca(i.placa))}</span></td><td class="r num">${brl.format(i.valor)}</td></tr>`).join("")}</tbody></table></div>
+        <textarea class="in span2 num" id="xData" rows="3" readonly style="font-size:11px">${esc(payload)}</textarea></fieldset>
+    </div>
+    <footer><button class="btn" type="button" id="xCopy">Copiar dados</button><div class="actions">${CFG.REEMBOLSOS_URL?`<a class="btn" href="${esc(CFG.REEMBOLSOS_URL)}" target="_blank" rel="noopener">Abrir Reembolsos ↗</a>`:""}<button class="btn primary" type="button" id="xDone">Já importei</button></div></footer></aside>`;
+  $("#drawerHost").querySelectorAll("[data-close]").forEach(b=>b.onclick=closeDrawer);document.addEventListener("keydown",escClose);
+  const copy=async()=>{try{await navigator.clipboard.writeText(payload);toast("Dados copiados — cole no app de Reembolsos")}catch(e){const t=$("#xData");t.focus();t.select();try{document.execCommand("copy");toast("Dados copiados")}catch(x){toast("Selecione o texto e copie com Ctrl+C")}}};
+  copy();$("#xCopy").onclick=copy;
+  $("#xDone").onclick=async()=>{const b=$("#xDone");b.disabled=true;b.innerHTML=`<span class="spin"></span>`;
+    try{const ids=P.map(i=>i.id);let em=new Date().toISOString();if(!S.demo){const j=await api({a:"exportar",ids});em=j.em||em}
+      P.forEach(i=>i.exportadoEm=em);closeDrawer();renderAll();toast(`${ids.length} marcado(s) como enviados para Reembolsos`)}
+    catch(x){b.disabled=false;b.textContent="Já importei";toast("Não foi possível marcar: "+x.message)}};
+};
 $("#listWrap").addEventListener("click",e=>{const tr=e.target.closest("tr.row");if(tr)openDrawer(S.items.find(i=>i.id===tr.dataset.id))});
 $("#btnCsv").onclick=()=>{
-  const L=listFiltered();const H=["Data","Motorista","Placa","Modelo","Posto","Combustível","Litros","Valor (R$)","Preço/L (R$)","Hodômetro (km)","Observação","Foto"];
+  const L=listFiltered();const H=["Data","Motorista","Placa","Modelo","Posto","Combustível","Litros","Valor (R$)","Preço/L (R$)","Hodômetro (km)","Pagamento","Enviado p/ Reembolsos","Observação","Foto"];
   const q=v=>{v=String(v??"");return /[;"\n]/.test(v)?`"${v.replace(/"/g,'""')}"`:v};
   const n=(v,d)=>v==null||v===""?"":Number(v).toFixed(d).replace(".",",");
-  const rows=L.map(i=>[fmtD(i.data),i.motorista,i.placa,i.modelo,i.posto,i.combustivel,n(i.litros,3),n(i.valor,2),n(i.precoLitro,3),i.km??"",i.obs,i.fotoUrl||""].map(q).join(";"));
+  const rows=L.map(i=>[fmtD(i.data),i.motorista,i.placa,i.modelo,i.posto,i.combustivel,n(i.litros,3),n(i.valor,2),n(i.precoLitro,3),i.km??"",i.pagamento,i.exportadoEm?fmtD(String(i.exportadoEm).slice(0,10)):"",i.obs,i.fotoUrl||""].map(q).join(";"));
   const blob=new Blob(["﻿"+[H.join(";"),...rows].join("\r\n")],{type:"text/csv;charset=utf-8"});
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`abastecimentos-verbo-${today()}.csv`;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);
 };
@@ -154,6 +185,7 @@ function openDrawer(it){
         <label class="f">Modelo<input class="in" id="e_mod" value="${esc(it.modelo)}"></label>
         <label class="f span2">Posto<input class="in" id="e_pos" value="${esc(it.posto)}" list="dlP"><datalist id="dlP">${uniq(i=>i.posto).map(n=>`<option value="${esc(n)}">`).join("")}</datalist></label>
         <label class="f">Combustível<select class="in" id="e_com">${opts(FUEIS,it.combustivel)}</select></label>
+        <label class="f">Quem pagou<select class="in" id="e_pag"><option value="Empresa" ${it.pagamento!=="Reembolso"?"selected":""}>Empresa (faturado)</option><option value="Reembolso" ${it.pagamento==="Reembolso"?"selected":""}>Condutor (reembolso)</option></select></label>
         <label class="f">Hodômetro (km)<input class="in num" id="e_km" inputmode="numeric" value="${it.km??""}"></label>
         <label class="f">Litros<input class="in num" id="e_lit" inputmode="decimal" value="${nf(it.litros,3)}"></label>
         <label class="f">Valor (R$)<input class="in num" id="e_val" inputmode="decimal" value="${nf(it.valor,2)}"></label>
@@ -171,7 +203,7 @@ function openDrawer(it){
   $("#frmE").addEventListener("submit",async e=>{
     e.preventDefault();const er=$("#eErr");er.hidden=true;
     const rec={id:it.id,data:$("#e_data").value,motorista:$("#e_mot").value.trim(),placa:$("#e_pla").value.toUpperCase().replace(/[^A-Z0-9]/g,""),modelo:$("#e_mod").value.trim(),
-      posto:$("#e_pos").value.trim(),combustivel:$("#e_com").value,km:$("#e_km").value.replace(/\D/g,"")?Number($("#e_km").value.replace(/\D/g,"")):"",
+      posto:$("#e_pos").value.trim(),combustivel:$("#e_com").value,pagamento:$("#e_pag").value,km:$("#e_km").value.replace(/\D/g,"")?Number($("#e_km").value.replace(/\D/g,"")):"",
       litros:parseNum($("#e_lit").value),valor:parseNum($("#e_val").value),obs:$("#e_obs").value.trim()};
     if(!rec.data||!rec.motorista||!rec.placa||!rec.posto||!(rec.litros>0)||!(rec.valor>0)){er.hidden=false;er.textContent="Preencha data, motorista, placa, posto, litros e valor.";return}
     if(S.demo){Object.assign(it,norm({...it,...rec,precoLitro:rec.valor/rec.litros}));closeDrawer();renderAll();toast("Alterado (exemplo — não salvo)");return}
@@ -249,7 +281,7 @@ function alertas(items){
 function alertIds(items){const m={};alertas(items).forEach(a=>{if(a.id&&!m[a.id])m[a.id]=a.txt});return m}
 
 /* ================= DASHBOARD ================= */
-const rmap={rPer:"per",rDe:"de",rAte:"ate",rPla:"pla",rMot:"mot",rCom:"com",rPos:"pos"};
+const rmap={rPer:"per",rDe:"de",rAte:"ate",rPla:"pla",rMot:"mot",rCom:"com",rPos:"pos",rPag:"pag"};
 Object.keys(rmap).forEach(id=>$("#"+id).addEventListener("input",e=>{S.r[rmap[id]]=e.target.value;if(id==="rDe"||id==="rAte"){S.r.per="custom";$("#rPer").value="custom"}renderDash()}));
 function range(){
   const r=S.r,n=new Date(),y=n.getFullYear(),m=n.getMonth();
@@ -261,7 +293,7 @@ function range(){
 function prevRange([a,b]){if(S.r.per==="tudo"||a.startsWith("0000")||b.startsWith("9999"))return null;
   if(S.r.per==="mes"||S.r.per==="mesant"){const d=pd(a);const pa=new Date(d.getFullYear(),d.getMonth()-1,1);const days=Math.round((pd(b)-pd(a))/864e5);const pb=new Date(pa.getFullYear(),pa.getMonth(),Math.min(pa.getDate()+days,new Date(pa.getFullYear(),pa.getMonth()+1,0).getDate()));return [iso(pa),iso(pb)]}
   const len=Math.round((pd(b)-pd(a))/864e5)+1;const pb=new Date(pd(a).getTime()-864e5);const pa=new Date(pb.getTime()-(len-1)*864e5);return [iso(pa),iso(pb)]}
-function dashFilter(rg){const r=S.r;return S.items.filter(i=>i.data>=rg[0]&&i.data<=rg[1]&&(!r.pla||i.placa===r.pla)&&(!r.mot||i.motorista===r.mot)&&(!r.com||i.combustivel===r.com)&&(!r.pos||i.posto===r.pos))}
+function dashFilter(rg){const r=S.r;return S.items.filter(i=>i.data>=rg[0]&&i.data<=rg[1]&&(!r.pla||i.placa===r.pla)&&(!r.mot||i.motorista===r.mot)&&(!r.com||i.combustivel===r.com)&&(!r.pos||i.posto===r.pos)&&pagOk(i,r.pag))}
 function destroyCharts(){Object.values(S.charts).forEach(c=>{try{c.destroy()}catch(e){}});S.charts={}}
 function group(arr,f){const m=new Map();arr.forEach(i=>{const k=f(i);if(!m.has(k))m.set(k,[]);m.get(k).push(i)});return m}
 function delta(cur,prev,inverse){if(prev==null||!isFinite(prev)||prev===0||cur==null)return "";const d=(cur/prev-1)*100;if(Math.abs(d)<0.05)return `<span class="delta">= vs. período anterior</span>`;
@@ -292,6 +324,7 @@ function renderDash(){
       const extra=sum(fuelMain[1],i=>Math.max(0,i.precoLitro-b.pm)*i.litros);if(extra>1)ins.push(`Se todo ${esc(fuelMain[0])} fosse comprado ao preço do posto mais barato, a economia seria de <b>${brl.format(extra)}</b> no período.`)}}
   if(KQ)ins.push(`Gasto ${K.V>=KQ.V?"subiu":"caiu"} <b>${nf(Math.abs(K.V/KQ.V-1)*100,1)}%</b> em relação ao período anterior (${brl.format(KQ.V)}).`);
   if(K.kml){const cv=consumo(P).porVeiculo;const best=Object.entries(cv).filter(([,v])=>v.kml).sort((a,b)=>b[1].kml-a[1].kml);if(best.length>1)ins.push(`Melhor consumo: <b>${esc(fmtPlaca(best[0][0]))}</b> com ${nf(best[0][1].kml,2)} km/L; pior: ${esc(fmtPlaca(best[best.length-1][0]))} com ${nf(best[best.length-1][1].kml,2)} km/L.`)}
+  {const R=P.filter(i=>i.pagamento==="Reembolso");if(R.length){const pend=R.filter(i=>!i.exportadoEm);ins.push(`<b>${nf(sum(R,i=>i.valor)/K.V*100,0)}%</b> do gasto foi pago pelos condutores (reembolso): ${brl.format(sum(R,i=>i.valor))}${pend.length?` — <b>${pend.length}</b> ainda não enviado${pend.length>1?"s":""} ao app de Reembolsos`:""}.`)}}
   ins.push(`Média de <b>${brl.format(K.V/days)}</b> por dia e <b>${nf(K.n/days*7,1)}</b> abastecimentos por semana.`);
   const al=alertas(P);const nb=al.filter(a=>a.t!=="i").length;if(nb)ins.push(`<b>${nb}</b> ponto${nb>1?"s":""} de atenção para conferir (veja no fim do painel).`);
 
@@ -444,7 +477,7 @@ function demo(){
       const [ps,adj]=postos[Math.floor(rnd()*postos.length)];const month=(d.getFullYear()-now.getFullYear())*12+d.getMonth()-now.getMonth();
       const pl=Math.round((base[c]+adj+month*-0.03+(rnd()-.5)*0.12)*1000)/1000;
       const m=mot[(vi+(rnd()<.2?1:0))%mot.length];
-      out.push({id:"d"+out.length,data:iso(d),motorista:m,placa:p,modelo:mo,posto:ps,combustivel:c,litros:lit,valor:Math.round(lit*pl*100)/100,precoLitro:pl,km:rnd()<.9?km:null,obs:"",fotoId:"x",criadoEm:d.toISOString()});
+      out.push({id:"d"+out.length,data:iso(d),motorista:m,placa:p,modelo:mo,posto:ps,combustivel:c,litros:lit,valor:Math.round(lit*pl*100)/100,precoLitro:pl,km:rnd()<.9?km:null,obs:"",fotoId:"x",criadoEm:d.toISOString(),pagamento:rnd()<.2?"Reembolso":"Empresa",exportadoEm:null});
       if(c!=="Etanol"&&rnd()<.25){const l2=Math.round((20+rnd()*40)*10)/10;out.push({id:"d"+out.length,data:iso(d),motorista:m,placa:p,modelo:mo,posto:ps,combustivel:"ARLA 32",litros:l2,valor:Math.round(l2*base["ARLA 32"]*100)/100,precoLitro:base["ARLA 32"],km:null,obs:"",fotoId:"x",criadoEm:d.toISOString()})}
       d=new Date(d.getTime()+(c==="Etanol"?5:vi===3?4:3+Math.floor(rnd()*3))*864e5);}
   });
