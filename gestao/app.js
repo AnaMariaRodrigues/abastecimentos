@@ -183,7 +183,7 @@ async function desenharCasca() {
   $('#app').innerHTML = `
     <div class="casca">
       <nav class="lateral" aria-label="Menu">
-        <div class="marca"><img src="icon.svg" alt="">Verbo Gestão</div>
+        <div class="marca"><img src="logo.png" alt="Verbo Logística"><div class="sistema">Gestão</div></div>
         <div class="menu">${links}</div>
         <div class="usuario">${esc(estado.usuario.nome)}<br>
           <a href="#/perfil" style="color:#fff">Meu perfil</a> ·
@@ -223,7 +223,7 @@ window.addEventListener('hashchange', navegar);
 
 // Menu completo no celular
 rota('/menu', tela => {
-  tela.innerHTML = `<div class="menu-cel"><div class="marca" style="color:#fff"><img src="icon.svg" alt="">Verbo Gestão</div>
+  tela.innerHTML = `<div class="menu-cel"><div class="marca"><img src="logo.png" alt="Verbo Logística"><div class="sistema">Gestão</div></div>
     <div class="menu">${menu().map(i => i[0] === 'grupo' ? `<div class="menu-grupo" style="color:#fff">${esc(i[1])}</div>`
       : `<a href="${i[1]}">${i[3] || ''} ${esc(i[0])}</a>`).join('')}
     <div class="menu-grupo" style="color:#fff">Conta</div><a href="#/perfil">👤 Meu perfil</a><a href="#" id="sair2">🚪 Sair</a></div></div>`;
@@ -233,8 +233,9 @@ rota('/menu', tela => {
 // ===================== Login e primeiro acesso =====================
 function telaLogin(msg = '') {
   $('#app').innerHTML = `
-    <div class="login"><div class="cartao">
-      <div class="marca"><img src="icon.svg" alt="" width="32">Verbo Gestão</div>
+    <div class="login"><div class="login-caixa">
+      <img class="login-logo" src="logo.png" alt="Verbo Logística"><div class="login-sub">Sistema de Gestão</div>
+      <div class="cartao"><h2>Entrar</h2>
       <form id="f-login" class="form" style="grid-template-columns:1fr">
         <label class="campo">E-mail<input name="email" type="email" autocomplete="username" required></label>
         <label class="campo">Senha<input name="senha" type="password" autocomplete="current-password" required></label>
@@ -242,7 +243,7 @@ function telaLogin(msg = '') {
         <button class="btn prim">Entrar</button>
         <button type="button" class="btn" id="primeiro">Primeiro acesso ou esqueci a senha</button>
       </form>
-    </div></div>`;
+    </div></div></div>`;
   const f = $('#f-login');
   f.onsubmit = async e => {
     e.preventDefault();
@@ -265,15 +266,15 @@ function telaLogin(msg = '') {
 
 function telaNovaSenha() {
   $('#app').innerHTML = `
-    <div class="login"><div class="cartao">
-      <div class="marca"><img src="icon.svg" alt="" width="32">Verbo Gestão</div>
-      <h2>Crie sua senha</h2>
+    <div class="login"><div class="login-caixa">
+      <img class="login-logo" src="logo.png" alt="Verbo Logística"><div class="login-sub">Sistema de Gestão</div>
+      <div class="cartao"><h2>Crie sua senha</h2>
       <form id="f-senha" class="form" style="grid-template-columns:1fr">
         <label class="campo">Nova senha<input name="s1" type="password" minlength="8" autocomplete="new-password" required></label>
         <label class="campo">Repita a senha<input name="s2" type="password" minlength="8" autocomplete="new-password" required></label>
         <div class="muted">Pelo menos 8 caracteres.</div><div id="msg" class="erro-txt"></div>
         <button class="btn prim">Salvar senha e entrar</button>
-      </form></div></div>`;
+      </form></div></div></div>`;
   const f = $('#f-senha');
   f.onsubmit = async e => {
     e.preventDefault();
