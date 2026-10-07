@@ -115,7 +115,7 @@ rota('/config/usuarios', async tela => {
       await api.convidar(r.email.toLowerCase(), r.nome);
       const novo = await api.um('usuarios', `email=eq.${encodeURIComponent(r.email.toLowerCase())}`);
       if (novo) {
-        await api.alterar('usuarios', `id=eq.${novo.id}`, { nome: r.nome });
+        await api.alterar('usuarios', `id=eq.${novo.id}`, { nome: r.nome, ativo: true });
         const sel = PERFIS.map(p => p[0]).filter(p => r['p_' + p]);
         await api.excluir('usuario_perfis', `usuario_id=eq.${novo.id}&perfil=not.in.(${sel.join(',') || 'x'})`);
         if (sel.length) await api.rest('usuario_perfis', { metodo: 'POST', corpo: sel.map(p => ({ usuario_id: novo.id, perfil: p })), prefer: 'resolution=ignore-duplicates' });
