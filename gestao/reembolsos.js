@@ -3,6 +3,9 @@
 
 const SELECT_REEMB = 'select=*,conta:plano_contas(codigo,nome),cc:centros_custo(nome),colab:usuarios(nome)';
 const nomeColab = r => r.colab?.nome || r.colaborador_nome || '—';
+const TIPOS_COMPROVANTE = ['Cupom fiscal (NFC-e / SAT)', 'Nota fiscal (NF-e)', 'Nota fiscal de serviço (NFS-e)', 'Recibo', 'Comprovante de cartão', 'Outro'];
+const FORMAS_PAGTO = ['Dinheiro', 'Pix', 'Cartão de débito', 'Cartão de crédito', 'Outro'];
+const descrTxt = r => r.descricao || r.fornecedor_nome || '';
 const categoriaTxt = r => r.conta ? `${r.conta.nome}${r.categoria_outros ? ' — ' + r.categoria_outros : ''}` : (r.categoria || '—');
 
 function tabelaReembolsos(linhas, { comColab = false, selecionar = false } = {}) {
@@ -15,7 +18,7 @@ function tabelaReembolsos(linhas, { comColab = false, selecionar = false } = {})
       ${selecionar ? `<td data-r="Selecionar">${r.status === 'aprovado' ? `<input type="checkbox" class="sel" value="${r.id}" data-colab="${esc(r.colaborador_id || r.colaborador_nome)}">` : ''}</td>` : ''}
       <td data-r="Nº" class="nowrap">${esc(r.numero)}</td><td data-r="Data">${dataBR(r.data_despesa)}</td>
       ${comColab ? `<td data-r="Colaborador">${esc(nomeColab(r))}</td>` : ''}
-      <td data-r="Categoria">${esc(categoriaTxt(r))}</td><td data-r="Descrição">${esc(r.descricao || '')}</td>
+      <td data-r="Categoria">${esc(categoriaTxt(r))}</td><td data-r="Descrição">${esc(descrTxt(r))}</td>
       <td data-r="Valor" class="num">${brl(r.valor)}</td><td data-r="Situação">${tag(r.status)}</td></tr>`).join('')}
     </tbody><tfoot><tr>${selecionar ? '<td></td>' : ''}<td colspan="${comColab ? 5 : 4}">${linhas.length} lançamento(s)</td><td class="num">${brl(total)}</td><td></td></tr></tfoot></table></div>`;
 }
@@ -54,6 +57,15 @@ async function formReembolso(tela, r = null) {
       <label class="campo" id="campo-outros" ${r?.categoria_outros ? '' : 'hidden'}>Qual despesa?<input name="categoria_outros" value="${esc(r?.categoria_outros || '')}" placeholder="Descreva a categoria"></label>
       <label class="campo">Centro de custo<select name="centro_custo_id">${opcoes(ccs.filter(c => c.ativo), null, c => c.nome, ccPadrao, null)}</select></label>
       <label class="campo">Veículo (se houver)<select name="veiculo_id">${opcoes(vs.filter(v => v.ativo), null, v => v.placa + (v.modelo ? ' · ' + v.modelo : ''), r?.veiculo_id, 'Nenhum')}</select></label>
+      <details class="largo comprovante" ${r?.fornecedor_nome || r?.chave_acesso ? 'open' : ''}><summary>Dados do comprovante (opcional)</summary><div class="form">
+        <label class="campo">Estabelecimento<input name="fornecedor_nome" value="${esc(r?.fornecedor_nome || '')}" placeholder="Nome do posto, restaurante…"></label>
+        <label class="campo">CNPJ / CPF<input name="fornecedor_documento" value="${esc(r?.fornecedor_documento || '')}" inputmode="numeric"></label>
+        <label class="campo">Tipo de comprovante<select name="tipo_comprovante"><option value="">—</option>${TIPOS_COMPROVANTE.map(t => `<option ${r?.tipo_comprovante === t ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
+        <label class="campo">Nº da nota / cupom<input name="numero_documento" value="${esc(r?.numero_documento || '')}"></label>
+        <label class="campo">Forma de pagamento<select name="forma_pagamento"><option value="">—</option>${FORMAS_PAGTO.map(t => `<option ${r?.forma_pagamento === t ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
+        <label class="campo">Cidade / UF<span class="lado"><input name="cidade" value="${esc(r?.cidade || '')}"><input name="uf" maxlength="2" value="${esc(r?.uf || '')}" style="max-width:64px" aria-label="UF"></span></label>
+        <label class="campo largo">Chave de acesso (44 dígitos)<input name="chave_acesso" inputmode="numeric" value="${esc(r?.chave_acesso || '')}"></label>
+      </div></details>
       <label class="campo largo">Descrição<textarea name="descricao" required placeholder="Ex.: almoço na viagem a Campinas">${esc(r?.descricao || '')}</textarea></label>
       <label class="campo largo">Comprovantes (foto ou PDF)<input type="file" name="arquivos" accept="image/*,application/pdf" multiple ${r ? '' : 'required'}></label>
       ${r ? `<div class="largo">Anexos atuais: ${await htmlAnexos('reembolso', r.id)}</div>` : ''}
@@ -70,6 +82,9 @@ async function formReembolso(tela, r = null) {
     if (contaOutros.includes(d.conta_id) && !d.categoria_outros) return aviso('Descreva a categoria "Outros".', true);
     const dados = { data_despesa: d.data_despesa, valor, conta_id: d.conta_id, categoria_outros: contaOutros.includes(d.conta_id) ? d.categoria_outros : null,
                     centro_custo_id: d.centro_custo_id || null, veiculo_id: d.veiculo_id || null, descricao: d.descricao, status: 'aguardando_aprovacao' };
+    for (const k of ['fornecedor_nome', 'fornecedor_documento', 'tipo_comprovante', 'numero_documento', 'forma_pagamento', 'cidade']) dados[k] = (d[k] || '').trim() || null;
+    dados.uf = (d.uf || '').trim().toUpperCase() || null;
+    dados.chave_acesso = (d.chave_acesso || '').replace(/\D/g, '') || null;
     await ocupado(e.submitter, async () => {
       try {
         let id;
@@ -95,7 +110,7 @@ rota('/reembolsos/ver/:id', async (tela, id) => {
   const nomes = porId(await usuarios());
   const dono = r.colaborador_id === estado.usuario.id;
   tela.innerHTML = `
-    <div class="topo"><div><h1>Reembolso ${esc(r.numero)}</h1><p class="sub">${tag(r.status)} · lançado em ${dataHoraBR(r.criado_em)}</p></div>
+    <div class="topo"><div><h1>Reembolso ${esc(r.numero)}</h1><p class="sub">${tag(r.status)} · lançado em ${dataHoraBR(r.criado_em)}${r.origem === 'legado_claude' ? ' · <span class="tag">Sistema anterior</span>' : ''}</p></div>
       <div class="acoes">
         ${dono && ['devolvido', 'aguardando_aprovacao'].includes(r.status) ? `<a class="btn" href="#/reembolsos/editar/${r.id}">Corrigir</a>` : ''}
         ${(dono && ['devolvido', 'aguardando_aprovacao', 'rascunho'].includes(r.status)) || (editaFin() && !['pago', 'em_pagamento', 'cancelado'].includes(r.status)) ? '<button class="btn perigo" id="cancelar">Cancelar lançamento</button>' : ''}
@@ -106,7 +121,12 @@ rota('/reembolsos/ver/:id', async (tela, id) => {
       <div><div class="muted">Valor</div><b>${brl(r.valor)}</b></div>
       <div><div class="muted">Categoria</div><b>${esc(categoriaTxt(r))}</b></div>
       <div><div class="muted">Centro de custo</div><b>${esc(r.cc?.nome || '—')}</b></div>
+      ${[['Estabelecimento', r.fornecedor_nome], ['CNPJ / CPF', r.fornecedor_documento], ['Comprovante', [r.tipo_comprovante, r.numero_documento && 'nº ' + r.numero_documento].filter(Boolean).join(' · ')],
+         ['Forma de pagamento', r.forma_pagamento], ['Cidade', [r.cidade, r.uf].filter(Boolean).join(' / ')], ['Placa', r.placa], ['Rota', r.rota]]
+        .filter(([, v]) => v).map(([k, v]) => `<div><div class="muted">${k}</div>${esc(v)}</div>`).join('')}
+      ${r.chave_acesso ? `<div class="largo"><div class="muted">Chave de acesso</div><span class="mono">${esc(r.chave_acesso)}</span></div>` : ''}
       <div class="largo"><div class="muted">Descrição</div>${esc(r.descricao || '—')}</div>
+      ${r.observacoes ? `<div class="largo"><div class="muted">Observações</div>${esc(r.observacoes)}</div>` : ''}
       <div class="largo"><div class="muted">Comprovantes</div>${hist}</div>
       ${['aguardando_aprovacao', 'devolvido'].includes(r.status) ? `<label class="campo largo">Incluir mais comprovantes<input type="file" id="mais" accept="image/*,application/pdf" multiple></label>` : ''}
     </div></div>
@@ -184,7 +204,7 @@ rota('/aprovacoes', async tela => {
         <div class="topo" style="margin-bottom:8px"><label class="check"><input type="checkbox" class="sel-ap" value="${a.id}">
           <span><b>Reembolso ${esc(r.numero)}</b> · ${esc(nomeColab(r))}</span></label><b style="font-size:18px">${brl(r.valor)}</b></div>
         <div class="muted">${dataBR(r.data_despesa)} · ${esc(categoriaTxt(r))} · ${esc(r.cc?.nome || '')}</div>
-        <p style="margin:8px 0">${esc(r.descricao || '')}</p>
+        <p style="margin:8px 0">${esc([r.fornecedor_nome, r.descricao].filter(Boolean).join(' — '))}</p>
         <div class="anexos-de" data-id="${r.id}"><span class="muted">Carregando comprovantes…</span></div>
         <div class="acoes" style="margin-top:12px"><button class="btn ok peq" data-d="aprovado">Aprovar</button>
           <button class="btn peq" data-d="devolvido">Devolver p/ correção</button><button class="btn perigo peq" data-d="reprovado">Reprovar</button></div>

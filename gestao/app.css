@@ -128,3 +128,15 @@ input[type=checkbox] { width: 18px; height: 18px; min-height: 0; }
   table.responsiva td::before { content: attr(data-r); font-weight: 600; color: var(--cinza); font-size: 12px; text-align: left; }
   table.responsiva td.num { justify-content: space-between; }
 }
+
+/* Dados do comprovante e importação */
+details.comprovante { border: 1px solid var(--borda); border-radius: 10px; padding: 10px 14px; }
+details.comprovante summary { cursor: pointer; font-weight: 600; color: var(--cinza); font-size: 13px; }
+details.comprovante[open] summary { margin-bottom: 12px; }
+.lado { display: flex; gap: 8px; }
+.lado input { flex: 1; min-width: 0; }
+.mono { font-family: ui-monospace, Consolas, monospace; font-size: 12px; word-break: break-all; }
+.conferencia td.ok { color: var(--verde, #02654D); font-weight: 700; }
+.conferencia td.erro { color: #b42318; font-weight: 700; }
+.progresso { height: 8px; background: var(--borda); border-radius: 4px; overflow: hidden; margin: 8px 0; }
+.progresso > div { height: 100%; width: 0; background: #02654D; transition: width .2s; }

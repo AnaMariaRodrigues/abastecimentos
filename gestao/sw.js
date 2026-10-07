@@ -1,6 +1,6 @@
 // Verbo Gestão — guarda a "casca" do app para abrir rápido e sem sinal
-const VERSAO = 'vg-v3';
-const ARQUIVOS = ['./', 'index.html', 'app.css?v=3', 'api.js?v=3', 'app.js?v=3', 'reembolsos.js?v=3', 'financeiro.js?v=3', 'cadastros.js?v=3', 'logo.png', 'favicon.png', 'manifest.webmanifest'];
+const VERSAO = 'vg-v4';
+const ARQUIVOS = ['./', 'index.html', 'app.css?v=4', 'api.js?v=4', 'app.js?v=4', 'reembolsos.js?v=4', 'financeiro.js?v=4', 'cadastros.js?v=4', 'migracao.js?v=4', 'logo.png', 'favicon.png', 'manifest.webmanifest'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(VERSAO).then(c => c.addAll(ARQUIVOS))); self.skipWaiting(); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== VERSAO).map(k => caches.delete(k))))); self.clients.claim(); });
 self.addEventListener('fetch', e => {

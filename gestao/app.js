@@ -175,6 +175,7 @@ function menu() {
     ['grupo', 'Configurações', tem('administrador', 'diretoria')],
     ['Usuários e perfis', '#/config/usuarios', tem('administrador'), '👥', null, true],
     ['Auditoria', '#/config/auditoria', veTudo(), '🔎', null, true],
+    ['Importar sistema anterior', '#/config/importar', tem('administrador'), '📦', null, true],
   ];
   return itens.filter(i => i[2]);
 }
