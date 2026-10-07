@@ -9,6 +9,10 @@ const CADASTROS = {
              ['telefone', 'Telefone'], ['email', 'E-mail'], ['chave_pix', 'Chave Pix'], ['banco', 'Banco'], ['agencia', 'Agência'], ['conta', 'Conta'],
              ['condicao_padrao', 'Condição de pagamento'], ['conta_padrao_id', 'Conta padrão do plano', 'conta']],
     colunas: ['razao_social', 'documento', 'categoria', 'telefone'] },
+  clientes: { titulo: 'Clientes', ordem: 'nome', edita: editaFin,
+    campos: [['nome', 'Nome / razão social', 'texto', true], ['documento', 'CNPJ ou CPF'], ['contato', 'Pessoa de contato'],
+             ['email', 'E-mail'], ['telefone', 'Telefone'], ['condicao_padrao', 'Condição de pagamento (ex.: 30 dias)']],
+    colunas: ['nome', 'documento', 'contato', 'telefone'] },
   plano_contas: { titulo: 'Plano de contas', ordem: 'codigo', edita: editaFin,
     campos: [['codigo', 'Código (ex.: 3.9)', 'texto', true], ['nome', 'Nome', 'texto', true],
              ['tipo', 'Tipo', 'lista', true, ['receita', 'deducao', 'custo', 'despesa', 'financeiro', 'investimento']],
@@ -88,58 +92,121 @@ rota('/cadastros/:tabela', async (tela, tabela) => {
 });
 
 // ===================== Usuários e perfis =====================
-const PERFIS = [['administrador', 'Administrador'], ['diretoria', 'Diretoria'], ['financeiro', 'Financeiro'], ['comprador', 'Comprador'],
-                ['aprovador', 'Aprovador'], ['solicitante', 'Solicitante'], ['motorista', 'Motorista']];
+const PERFIS = [['administrador', 'Administrador', 'Configura tudo'], ['diretoria', 'Diretoria', 'Vê tudo e aprova acima das alçadas'],
+                ['financeiro', 'Financeiro', 'Contas, pagamentos e reembolsos'], ['comprador', 'Comprador', 'Cotações, pedidos e fornecedores'],
+                ['aprovador', 'Aprovador', 'Aprova o seu centro de custo'], ['solicitante', 'Solicitante', 'Lança reembolsos e pedidos'],
+                ['motorista', 'Motorista', 'Abastecimentos e reembolsos de viagem']];
+const SETORES = ['Administrativo', 'Comercial', 'Diretoria', 'Financeiro', 'Frota', 'Operação', 'Qualidade', 'Recursos Humanos'];
+const soDigitos = v => String(v || '').replace(/\D/g, '');
+function cpfValido(c) {
+  c = soDigitos(c);
+  if (c.length !== 11 || /^(\d)\1+$/.test(c)) return false;
+  const dv = n => { let s = 0; for (let i = 0; i < n; i++) s += Number(c[i]) * (n + 1 - i); const r = (s * 10) % 11; return r === 10 ? 0 : r; };
+  return dv(9) === Number(c[9]) && dv(10) === Number(c[10]);
+}
+const fmtCPF = c => { c = soDigitos(c); return c.length === 11 ? `${c.slice(0, 3)}.${c.slice(3, 6)}.${c.slice(6, 9)}-${c.slice(9)}` : c; };
+const fmtTel = t => { t = soDigitos(t); return t.length === 11 ? `(${t.slice(0, 2)}) ${t.slice(2, 7)}-${t.slice(7)}` : t.length === 10 ? `(${t.slice(0, 2)}) ${t.slice(2, 6)}-${t.slice(6)}` : t; };
+const nomePerfil = p => PERFIS.find(x => x[0] === p)?.[1] || p;
+
+function mascaras(raiz) {
+  $('[name=cpf]', raiz)?.addEventListener('input', e => { const d = soDigitos(e.target.value).slice(0, 11);
+    e.target.value = d.length > 9 ? `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}` : d.length > 6 ? `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6)}` : d.length > 3 ? `${d.slice(0, 3)}.${d.slice(3)}` : d; });
+  $('[name=telefone]', raiz)?.addEventListener('input', e => { const d = soDigitos(e.target.value).slice(0, 11);
+    e.target.value = d.length > 10 ? fmtTel(d) : d.length > 6 ? `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}` : d.length > 2 ? `(${d.slice(0, 2)}) ${d.slice(2)}` : d; });
+}
+
+function formUsuario(u, atuais, ccs, funcoes) {
+  const novo = !u;
+  return `<form><h2>${novo ? 'Cadastrar e convidar usuário' : esc(u.nome)}</h2>
+    ${novo ? '<p class="muted">A pessoa recebe um e-mail com o link para criar a senha e já entra no sistema com os perfis marcados.</p>' : `<p class="muted">${esc(u.email)}</p>`}
+    <div class="form">
+      <label class="campo largo">Nome completo *<input name="nome" value="${esc(u?.nome || '')}" required autocomplete="off"></label>
+      <label class="campo">CPF *<input name="cpf" value="${esc(fmtCPF(u?.cpf))}" inputmode="numeric" placeholder="000.000.000-00" required></label>
+      ${novo ? '<label class="campo">E-mail *<input type="email" name="email" required autocomplete="off"></label>' : ''}
+      <label class="campo">Função *<input name="cargo" value="${esc(u?.cargo || '')}" list="lista-funcoes" required placeholder="Ex.: Motorista, Analista financeiro"></label>
+      <label class="campo">Setor *<input name="setor" value="${esc(u?.setor || '')}" list="lista-setores" required></label>
+      <label class="campo">Centro de custo<select name="cc">${opcoes(ccs.filter(c => c.ativo), null, c => c.nome, u?.centro_custo_id, 'Não informar')}</select></label>
+      <label class="campo">Telefone *<input name="telefone" value="${esc(fmtTel(u?.telefone))}" inputmode="tel" placeholder="(00) 00000-0000" required></label>
+      <label class="campo largo">Chave Pix para reembolsos<input name="chave_pix" value="${esc(u?.chave_pix || '')}" placeholder="CPF, e-mail, telefone ou chave aleatória"></label>
+      <div class="largo"><div class="muted" style="margin-bottom:6px">Perfis de acesso *</div>
+        <div class="grade" style="grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px">${PERFIS.map(([v, t, d]) => `<label class="check" style="align-items:flex-start"><input type="checkbox" name="p_${v}" ${atuais.includes(v) ? 'checked' : ''} ${v === 'administrador' && u?.id === estado.usuario.id ? 'disabled' : ''}>
+          <span><b>${t}</b><br><span class="muted">${d}</span></span></label>`).join('')}</div></div>
+    </div>
+    <datalist id="lista-setores">${[...new Set([...SETORES, ...funcoes.setores])].sort().map(x => `<option value="${esc(x)}">`).join('')}</datalist>
+    <datalist id="lista-funcoes">${funcoes.cargos.map(x => `<option value="${esc(x)}">`).join('')}</datalist>
+    <div class="rodape">${!novo && u.id !== estado.usuario.id ? `<button class="btn ${u.ativo ? 'perigo' : ''}" value="${u.ativo ? 'desativar' : 'ativar'}" formnovalidate>${u.ativo ? 'Desativar acesso' : 'Reativar acesso'}</button>
+      <button class="btn" value="reenviar" formnovalidate>Reenviar convite</button>` : ''}
+      <button type="button" class="btn" data-fechar>Voltar</button><button class="btn prim" value="salvar">${novo ? 'Cadastrar e enviar convite' : 'Salvar'}</button></div></form>`;
+}
+
+function validarUsuario(r, todos, id) {
+  const perfis = PERFIS.map(p => p[0]).filter(p => r['p_' + p]);
+  if (!cpfValido(r.cpf)) return 'CPF inválido. Confira os números.';
+  if (todos.some(x => x.cpf === soDigitos(r.cpf) && x.id !== id)) return 'Já existe um usuário com este CPF.';
+  if (soDigitos(r.telefone).length < 10) return 'Telefone incompleto: informe DDD e número.';
+  if (!perfis.length) return 'Marque pelo menos um perfil de acesso.';
+  return null;
+}
+
+async function salvarPerfis(id, sel, atuais) {
+  const tirar = atuais.filter(p => !sel.includes(p)), por = sel.filter(p => !atuais.includes(p));
+  if (tirar.length) await api.excluir('usuario_perfis', `usuario_id=eq.${id}&perfil=in.(${tirar.join(',')})`);
+  if (por.length) await api.inserir('usuario_perfis', por.map(p => ({ usuario_id: id, perfil: p })));
+}
 
 rota('/config/usuarios', async tela => {
   if (!tem('administrador')) { tela.innerHTML = '<div class="cartao vazio">Somente o administrador gerencia usuários.</div>'; return; }
-  const [us, ps, ccs] = await Promise.all([usuarios(true), api.listar('usuario_perfis', 'select=*'), centros()]);
+  const [us, ps, ccs] = await Promise.all([api.listar('usuarios', 'select=*&order=nome'), api.listar('usuario_perfis', 'select=*'), centros()]);
   const perfisDe = id => ps.filter(p => p.usuario_id === id).map(p => p.perfil);
+  const funcoes = { cargos: [...new Set(us.map(u => u.cargo).filter(Boolean))].sort(), setores: us.map(u => u.setor).filter(Boolean) };
+  const filtro = estado.params.get('ver') || 'ativos';
+  const lista_ = us.filter(u => filtro === 'todos' || (filtro === 'ativos' ? u.ativo : !u.ativo));
   tela.innerHTML = `
     <div class="topo"><div><h1>Usuários e perfis</h1><p class="sub">${us.filter(u => u.ativo).length} usuário(s) ativo(s)</p></div>
-      <button class="btn prim" id="convidar">+ Convidar usuário</button></div>
-    <div class="cartao"><div class="tabela-wrap"><table class="responsiva"><thead><tr><th>Nome</th><th>E-mail</th><th>Perfis</th><th>Centro de custo</th><th></th></tr></thead><tbody>
-      ${us.map(u => `<tr class="clicavel" data-id="${u.id}"><td data-r="Nome">${esc(u.nome)}</td><td data-r="E-mail">${esc(u.email)}</td>
-        <td data-r="Perfis">${perfisDe(u.id).map(p => `<span class="tag azul">${esc(PERFIS.find(x => x[0] === p)?.[1] || p)}</span>`).join(' ')}</td>
-        <td data-r="Centro de custo">${esc(ccs.find(c => c.id === u.centro_custo_id)?.nome || '—')}</td><td>${u.ativo ? '' : '<span class="tag">Inativo</span>'}</td></tr>`).join('')}
-    </tbody></table></div></div>
-    <p class="muted">O convite chega por e-mail com um link de acesso. No primeiro acesso a pessoa cria a própria senha.</p>`;
+      <div class="acoes"><select id="ver" style="width:auto">${[['ativos', 'Ativos'], ['inativos', 'Inativos'], ['todos', 'Todos']].map(([v, t]) => `<option value="${v}" ${v === filtro ? 'selected' : ''}>${t}</option>`).join('')}</select>
+      <button class="btn prim" id="convidar">+ Cadastrar usuário</button></div></div>
+    <div class="cartao"><div class="tabela-wrap"><table class="responsiva"><thead><tr><th>Nome</th><th>Função · Setor</th><th>CPF</th><th>Contato</th><th>Perfis</th><th></th></tr></thead><tbody>
+      ${lista_.map(u => `<tr class="clicavel" data-id="${u.id}"><td data-r="Nome"><b>${esc(u.nome)}</b></td>
+        <td data-r="Função · Setor">${esc([u.cargo, u.setor].filter(Boolean).join(' · ') || '—')}</td>
+        <td data-r="CPF" class="nowrap">${esc(fmtCPF(u.cpf) || '—')}</td>
+        <td data-r="Contato">${esc(u.email)}${u.telefone ? `<br><span class="muted">${esc(fmtTel(u.telefone))}</span>` : ''}</td>
+        <td data-r="Perfis">${perfisDe(u.id).map(p => `<span class="tag azul">${esc(nomePerfil(p))}</span>`).join(' ') || '<span class="tag amarelo">Sem perfil</span>'}</td>
+        <td>${u.ativo ? '' : '<span class="tag">Inativo</span>'}</td></tr>`).join('') || '<tr><td colspan="6" class="vazio">Nenhum usuário.</td></tr>'}
+    </tbody></table></div></div>`;
+  $('#ver').onchange = e => (location.hash = '#/config/usuarios?ver=' + e.target.value);
+
   $('#convidar').onclick = async () => {
-    const r = await modal(`<form><h2>Convidar usuário</h2><div class="form">
-      <label class="campo largo">Nome completo<input name="nome" required></label>
-      <label class="campo largo">E-mail<input type="email" name="email" required></label>
-      <div class="largo"><div class="muted" style="margin-bottom:6px">Perfis</div>${PERFIS.map(([v, t]) => `<label class="check"><input type="checkbox" name="p_${v}" ${v === 'solicitante' ? 'checked' : ''}> ${t}</label>`).join('')}</div></div>
-      <div class="rodape"><button type="button" class="btn" data-fechar>Voltar</button><button class="btn prim">Enviar convite</button></div></form>`);
+    const r = await modal(formUsuario(null, ['solicitante'], ccs, funcoes), { aoAbrir: mascaras,
+      validar: d => validarUsuario(d, us, null) || (us.some(x => x.email.toLowerCase() === d.email.toLowerCase())
+        ? 'Este e-mail já está cadastrado. Abra o usuário na lista para editar ou reenviar o convite.' : null) });
     if (!r) return;
     try {
-      await api.convidar(r.email.toLowerCase(), r.nome);
-      const novo = await api.um('usuarios', `email=eq.${encodeURIComponent(r.email.toLowerCase())}`);
-      if (novo) {
-        await api.alterar('usuarios', `id=eq.${novo.id}`, { nome: r.nome, ativo: true });
-        const sel = PERFIS.map(p => p[0]).filter(p => r['p_' + p]);
-        await api.excluir('usuario_perfis', `usuario_id=eq.${novo.id}&perfil=not.in.(${sel.join(',') || 'x'})`);
-        if (sel.length) await api.rest('usuario_perfis', { metodo: 'POST', corpo: sel.map(p => ({ usuario_id: novo.id, perfil: p })), prefer: 'resolution=ignore-duplicates' });
-      }
-      aviso('Convite enviado para ' + r.email + '.'); navegar();
+      const email = r.email.toLowerCase();
+      await api.convidar(email, r.nome);
+      const novo = await api.um('usuarios', `email=eq.${encodeURIComponent(email)}`);
+      if (!novo) throw new Error('O convite foi enviado, mas o cadastro não apareceu. Atualize a página.');
+      await api.alterar('usuarios', `id=eq.${novo.id}`, { nome: r.nome, cpf: soDigitos(r.cpf), cargo: r.cargo, setor: r.setor,
+        centro_custo_id: r.cc || null, telefone: soDigitos(r.telefone), chave_pix: r.chave_pix || null, ativo: true });
+      await salvarPerfis(novo.id, PERFIS.map(p => p[0]).filter(p => r['p_' + p]), []);
+      delete estado.cache.usuarios; aviso('Usuário cadastrado. Convite enviado para ' + email + '.'); navegar();
     } catch (err) { falha(err); }
   };
+
   $$('tr[data-id]', tela).forEach(tr => (tr.onclick = async () => {
     const u = us.find(x => x.id === tr.dataset.id), atuais = perfisDe(u.id);
-    const r = await modal(`<form><h2>${esc(u.nome)}</h2><p class="muted">${esc(u.email)}</p><div class="form">
-      <label class="campo largo">Nome<input name="nome" value="${esc(u.nome)}" required></label>
-      <label class="campo largo">Centro de custo<select name="cc">${opcoes(ccs.filter(c => c.ativo), null, c => c.nome, u.centro_custo_id, 'Nenhum')}</select></label>
-      <div class="largo"><div class="muted" style="margin-bottom:6px">Perfis</div>${PERFIS.map(([v, t]) => `<label class="check"><input type="checkbox" name="p_${v}" ${atuais.includes(v) ? 'checked' : ''} ${v === 'administrador' && u.id === estado.usuario.id ? 'disabled' : ''}> ${t}</label>`).join('')}</div></div>
-      <div class="rodape">${u.id !== estado.usuario.id ? `<button class="btn ${u.ativo ? 'perigo' : ''}" value="${u.ativo ? 'desativar' : 'ativar'}">${u.ativo ? 'Desativar acesso' : 'Reativar acesso'}</button>` : ''}
-      <button type="button" class="btn" data-fechar>Voltar</button><button class="btn prim" value="salvar">Salvar</button></div></form>`);
+    const r = await modal(formUsuario(u, atuais, ccs, funcoes), { aoAbrir: mascaras,
+      validar: d => d._acao === 'salvar' ? validarUsuario(d, us, u.id) : null });
     if (!r) return;
     try {
-      const dados = { nome: r.nome, centro_custo_id: r.cc || null };
-      if (r._acao === 'desativar' || r._acao === 'ativar') dados.ativo = r._acao === 'ativar';
-      await api.alterar('usuarios', `id=eq.${u.id}`, dados);
-      const sel = PERFIS.map(p => p[0]).filter(p => r['p_' + p] || (p === 'administrador' && u.id === estado.usuario.id && atuais.includes(p)));
-      const tirar = atuais.filter(p => !sel.includes(p)), por = sel.filter(p => !atuais.includes(p));
-      if (tirar.length) await api.excluir('usuario_perfis', `usuario_id=eq.${u.id}&perfil=in.(${tirar.join(',')})`);
-      if (por.length) await api.inserir('usuario_perfis', por.map(p => ({ usuario_id: u.id, perfil: p })));
+      if (r._acao === 'reenviar') { await api.convidar(u.email, u.nome); aviso('Convite reenviado para ' + u.email + '.'); return; }
+      if (r._acao === 'desativar' || r._acao === 'ativar') {
+        await api.alterar('usuarios', `id=eq.${u.id}`, { ativo: r._acao === 'ativar' });
+      } else {
+        await api.alterar('usuarios', `id=eq.${u.id}`, { nome: r.nome, cpf: soDigitos(r.cpf), cargo: r.cargo, setor: r.setor,
+          centro_custo_id: r.cc || null, telefone: soDigitos(r.telefone), chave_pix: r.chave_pix || null });
+        const sel = PERFIS.map(p => p[0]).filter(p => r['p_' + p] || (p === 'administrador' && u.id === estado.usuario.id && atuais.includes(p)));
+        await salvarPerfis(u.id, sel, atuais);
+      }
       delete estado.cache.usuarios; aviso('Usuário atualizado.'); navegar();
     } catch (err) { falha(err); }
   }));
@@ -171,19 +238,27 @@ rota('/config/auditoria', async tela => {
 // ===================== Meu perfil =====================
 rota('/perfil', async tela => {
   const u = estado.usuario;
+  const cc = (await centros()).find(c => c.id === u.centro_custo_id);
   tela.innerHTML = `
-    <div class="topo"><div><h1>Meu perfil</h1><p class="sub">${esc(u.email)} · ${estado.perfis.map(p => PERFIS.find(x => x[0] === p)?.[1] || p).join(', ')}</p></div></div>
+    <div class="topo"><div><h1>Meu perfil</h1><p class="sub">${esc(u.email)} · ${estado.perfis.map(nomePerfil).join(', ')}</p></div></div>
+    <div class="cartao"><div class="form">
+      <div><div class="muted">CPF</div><b>${esc(fmtCPF(u.cpf) || '—')}</b></div>
+      <div><div class="muted">Função</div><b>${esc(u.cargo || '—')}</b></div>
+      <div><div class="muted">Setor</div><b>${esc(u.setor || '—')}</b></div>
+      <div><div class="muted">Centro de custo</div><b>${esc(cc?.nome || '—')}</b></div>
+      <div class="largo muted">Para corrigir CPF, função, setor ou centro de custo, fale com o administrador.</div></div></div>
     <form class="cartao form" id="f-perfil">
-      <label class="campo">Nome<input name="nome" value="${esc(u.nome)}" required></label>
-      <label class="campo">Telefone<input name="telefone" value="${esc(u.telefone || '')}" inputmode="tel"></label>
+      <label class="campo">Nome completo<input name="nome" value="${esc(u.nome)}" required></label>
+      <label class="campo">Telefone<input name="telefone" value="${esc(fmtTel(u.telefone))}" inputmode="tel"></label>
       <label class="campo largo">Chave Pix (para receber reembolsos)<input name="chave_pix" value="${esc(u.chave_pix || '')}"></label>
       <div class="largo"><button class="btn prim">Salvar</button></div></form>
     <form class="cartao form" id="f-senha2"><h2 class="largo" style="margin:0">Trocar senha</h2>
       <label class="campo">Nova senha<input type="password" name="s1" minlength="8" autocomplete="new-password" required></label>
       <label class="campo">Repita<input type="password" name="s2" minlength="8" autocomplete="new-password" required></label>
       <div class="largo"><button class="btn">Trocar senha</button></div></form>`;
+  mascaras(tela);
   $('#f-perfil').onsubmit = async e => { e.preventDefault(); const d = formDados(e.target);
-    try { const [n] = await api.alterar('usuarios', `id=eq.${u.id}`, { nome: d.nome, telefone: d.telefone || null, chave_pix: d.chave_pix || null });
+    try { const [n] = await api.alterar('usuarios', `id=eq.${u.id}`, { nome: d.nome, telefone: soDigitos(d.telefone) || null, chave_pix: d.chave_pix || null });
           Object.assign(estado.usuario, n); aviso('Perfil salvo.'); navegar(); } catch (err) { falha(err); } };
   $('#f-senha2').onsubmit = async e => { e.preventDefault(); const d = formDados(e.target);
     if (d.s1 !== d.s2) return aviso('As senhas não são iguais.', true);

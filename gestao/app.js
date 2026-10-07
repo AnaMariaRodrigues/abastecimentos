@@ -40,7 +40,7 @@ async function ocupado(btn, fn) {
 }
 
 // Modal genérico: devolve uma Promise com os dados do formulário (ou null se cancelar)
-function modal(html, { aoAbrir } = {}) {
+function modal(html, { aoAbrir, validar } = {}) {
   const fundo = $('#modal');
   fundo.innerHTML = `<div class="modal" role="dialog" aria-modal="true">${html}</div>`;
   fundo.hidden = false;
@@ -49,7 +49,13 @@ function modal(html, { aoAbrir } = {}) {
     fundo.onclick = e => { if (e.target === fundo) fechar(null); };
     $$('[data-fechar]', fundo).forEach(b => (b.onclick = () => fechar(null)));
     const form = $('form', fundo);
-    if (form) form.onsubmit = e => { e.preventDefault(); fechar({ ...formDados(form), _acao: e.submitter?.value }); };
+    if (form) form.onsubmit = e => {
+      e.preventDefault();
+      const dados = { ...formDados(form), _acao: e.submitter?.value };
+      const erro = validar?.(dados);
+      if (erro) { aviso(erro, true); return; }
+      fechar(dados);
+    };
     if (aoAbrir) aoAbrir(fundo, fechar);
     setTimeout(() => $('input:not([type=hidden]),select,textarea', fundo)?.focus(), 50);
   });
@@ -112,7 +118,7 @@ async function cad(tabela, consulta, forcar = false) {
   estado.cache[tabela] = await api.listar(tabela, consulta);
   return estado.cache[tabela];
 }
-const contas = f => cad('plano_contas', 'select=id,codigo,nome,aceita_lancamento,ativo&order=codigo', f);
+const contas = f => cad('plano_contas', 'select=id,codigo,nome,tipo,aceita_lancamento,ativo&order=codigo', f);
 const centros = f => cad('centros_custo', 'select=id,codigo,nome,ativo&order=nome', f);
 const usuarios = f => cad('usuarios', 'select=id,nome,email,ativo,centro_custo_id&order=nome', f);
 const fornecedores = f => cad('fornecedores', 'select=id,razao_social,nome_fantasia,ativo&order=razao_social', f);
@@ -124,8 +130,8 @@ const opcoes = (arr, valor, rotulo, sel, vazio = '') =>
   (vazio !== null ? `<option value="">${esc(vazio)}</option>` : '') +
   arr.map(x => `<option value="${esc(x.id)}" ${x.id === sel ? 'selected' : ''}>${esc(rotulo(x))}</option>`).join('');
 
-async function opcoesContas(sel) {
-  const cs = (await contas()).filter(c => c.ativo);
+async function opcoesContas(sel, tipos) {
+  const cs = (await contas()).filter(c => c.ativo && (!tipos || tipos.includes(c.tipo)));
   let html = '<option value="">Selecione…</option>', grupo = '';
   for (const c of cs) {
     if (!c.aceita_lancamento) { if (grupo) html += '</optgroup>'; html += `<optgroup label="${esc(c.codigo + ' ' + c.nome)}">`; grupo = c.codigo; continue; }
@@ -157,9 +163,11 @@ function menu() {
     ['Meus reembolsos', '#/reembolsos', true, '🧾', 'devolvidos'],
     ['grupo', 'Financeiro', veTudo() || tem('comprador', 'aprovador')],
     ['Contas a pagar', '#/financeiro/pagar', veTudo() || tem('comprador'), '💳', null, true],
+    ['Contas a receber', '#/financeiro/receber', veTudo(), '📥', null, true],
     ['Reembolsos', '#/financeiro/reembolsos', veTudo() || tem('aprovador'), '💰', 'reembolsos_a_pagar', true],
     ['grupo', 'Cadastros', veTudo() || tem('comprador')],
     ['Fornecedores', '#/cadastros/fornecedores', veTudo() || tem('comprador'), '🏢', null, true],
+    ['Clientes', '#/cadastros/clientes', veTudo(), '🤝', null, true],
     ['Plano de contas', '#/cadastros/plano_contas', veTudo(), '📚', null, true],
     ['Centros de custo', '#/cadastros/centros_custo', veTudo(), '🎯', null, true],
     ['Bancos e caixa', '#/cadastros/contas_bancarias', veTudo(), '🏦', null, true],
@@ -321,16 +329,18 @@ rota('/inicio', async tela => {
   const faixas = { '1_vencidos': 'Vencidos', '2_hoje': 'Vencem hoje', '3_7_dias': 'Próximos 7 dias', '4_30_dias': 'Próximos 30 dias', '5_depois': 'Depois de 30 dias' };
   let agenda = '';
   if (veTudo()) {
-    const ag = await api.listar('v_agenda_vencimentos', 'tipo=eq.pagar&order=faixa');
-    agenda = `<div class="cartao"><h2>Agenda de pagamentos</h2>${ag.length ? `<table><tbody>${ag.map(a =>
-      `<tr class="clicavel" onclick="location.hash='#/financeiro/pagar?faixa=${a.faixa}'"><td>${a.faixa === '1_vencidos' ? '<span class="tag vermelho">Vencidos</span>' : esc(faixas[a.faixa])}</td>
+    const ag = await api.listar('v_agenda_vencimentos', 'order=faixa');
+    const bloco = (tipo, titulo) => { const linhas = ag.filter(a => a.tipo === tipo);
+      return `<div class="cartao"><h2>${titulo}</h2>${linhas.length ? `<table><tbody>${linhas.map(a =>
+      `<tr class="clicavel" onclick="location.hash='#/financeiro/${tipo}?faixa=${a.faixa}'"><td>${a.faixa === '1_vencidos' ? '<span class="tag vermelho">Vencidos</span>' : esc(faixas[a.faixa])}</td>
        <td class="num">${a.quantidade} conta(s)</td><td class="num"><b>${brl(a.total)}</b></td></tr>`).join('')}</tbody></table>`
-      : '<div class="vazio">Nenhuma conta em aberto.</div>'}</div>`;
+      : '<div class="vazio">Nada em aberto.</div>'}</div>`; };
+    agenda = `<div class="grade" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr))">${bloco('pagar', 'A pagar')}${bloco('receber', 'A receber')}</div>`;
   }
   const notifs = await api.listar('notificacoes', `usuario_id=eq.${estado.usuario.id}&order=criado_em.desc&limit=8`);
   tela.innerHTML = `
     <div class="topo"><div><h1>Olá, ${esc(estado.usuario.nome.split(' ')[0])}</h1><p class="sub">${new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</p></div>
-      <div class="acoes"><a class="btn prim" href="#/reembolsos/novo">+ Lançar reembolso</a>${editaFin() ? '<a class="btn" href="#/financeiro/pagar/novo">+ Conta a pagar</a>' : ''}</div></div>
+      <div class="acoes"><a class="btn prim" href="#/reembolsos/novo">+ Lançar reembolso</a>${editaFin() ? '<a class="btn" href="#/financeiro/pagar/novo">+ Conta a pagar</a><a class="btn" href="#/financeiro/receber/novo">+ Conta a receber</a>' : ''}</div></div>
     <div class="grade" style="margin-bottom:16px">
       ${!tem('motorista') || veTudo() || tem('aprovador') ? `<a class="cartao kpi ${p.aprovar ? 'alerta' : ''}" href="#/aprovacoes"><div class="n">${p.aprovar || 0}</div><div class="r">para você aprovar</div></a>` : ''}
       <a class="cartao kpi ${p.devolvidos ? 'alerta' : ''}" href="#/reembolsos"><div class="n">${p.devolvidos || 0}</div><div class="r">reembolsos devolvidos para correção</div></a>
