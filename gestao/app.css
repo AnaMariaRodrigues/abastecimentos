@@ -140,3 +140,5 @@ details.comprovante[open] summary { margin-bottom: 12px; }
 .conferencia td.erro { color: #b42318; font-weight: 700; }
 .progresso { height: 8px; background: var(--borda); border-radius: 4px; overflow: hidden; margin: 8px 0; }
 .progresso > div { height: 100%; width: 0; background: #02654D; transition: width .2s; }
+
+.alerta-obs { background: #FFF6E0; border: 1px solid #DDA936; border-radius: 8px; padding: 8px 12px; color: #5c4300; }

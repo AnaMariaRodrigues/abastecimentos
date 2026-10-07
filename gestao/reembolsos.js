@@ -18,7 +18,7 @@ function tabelaReembolsos(linhas, { comColab = false, selecionar = false } = {})
       ${selecionar ? `<td data-r="Selecionar">${r.status === 'aprovado' ? `<input type="checkbox" class="sel" value="${r.id}" data-colab="${esc(r.colaborador_id || r.colaborador_nome)}">` : ''}</td>` : ''}
       <td data-r="Nº" class="nowrap">${esc(r.numero)}</td><td data-r="Data">${dataBR(r.data_despesa)}</td>
       ${comColab ? `<td data-r="Colaborador">${esc(nomeColab(r))}</td>` : ''}
-      <td data-r="Categoria">${esc(categoriaTxt(r))}</td><td data-r="Descrição">${esc(descrTxt(r))}</td>
+      <td data-r="Categoria">${esc(categoriaTxt(r))}</td><td data-r="Descrição">${r.observacoes?.includes('VERIFICAR') ? '<span title="Verificar: veja as observações">⚠️</span> ' : ''}${esc(descrTxt(r))}</td>
       <td data-r="Valor" class="num">${brl(r.valor)}</td><td data-r="Situação">${tag(r.status)}</td></tr>`).join('')}
     </tbody><tfoot><tr>${selecionar ? '<td></td>' : ''}<td colspan="${comColab ? 5 : 4}">${linhas.length} lançamento(s)</td><td class="num">${brl(total)}</td><td></td></tr></tfoot></table></div>`;
 }
@@ -126,7 +126,7 @@ rota('/reembolsos/ver/:id', async (tela, id) => {
         .filter(([, v]) => v).map(([k, v]) => `<div><div class="muted">${k}</div>${esc(v)}</div>`).join('')}
       ${r.chave_acesso ? `<div class="largo"><div class="muted">Chave de acesso</div><span class="mono">${esc(r.chave_acesso)}</span></div>` : ''}
       <div class="largo"><div class="muted">Descrição</div>${esc(r.descricao || '—')}</div>
-      ${r.observacoes ? `<div class="largo"><div class="muted">Observações</div>${esc(r.observacoes)}</div>` : ''}
+      ${r.observacoes ? `<div class="largo alerta-obs"><b>Observações</b><br>${esc(r.observacoes)}</div>` : ''}
       <div class="largo"><div class="muted">Comprovantes</div>${hist}</div>
       ${['aguardando_aprovacao', 'devolvido'].includes(r.status) ? `<label class="campo largo">Incluir mais comprovantes<input type="file" id="mais" accept="image/*,application/pdf" multiple></label>` : ''}
     </div></div>
@@ -205,6 +205,7 @@ rota('/aprovacoes', async tela => {
           <span><b>Reembolso ${esc(r.numero)}</b> · ${esc(nomeColab(r))}</span></label><b style="font-size:18px">${brl(r.valor)}</b></div>
         <div class="muted">${dataBR(r.data_despesa)} · ${esc(categoriaTxt(r))} · ${esc(r.cc?.nome || '')}</div>
         <p style="margin:8px 0">${esc([r.fornecedor_nome, r.descricao].filter(Boolean).join(' — '))}</p>
+        ${r.observacoes ? `<p class="alerta-obs">⚠️ ${esc(r.observacoes)}</p>` : ''}
         <div class="anexos-de" data-id="${r.id}"><span class="muted">Carregando comprovantes…</span></div>
         <div class="acoes" style="margin-top:12px"><button class="btn ok peq" data-d="aprovado">Aprovar</button>
           <button class="btn peq" data-d="devolvido">Devolver p/ correção</button><button class="btn perigo peq" data-d="reprovado">Reprovar</button></div>
