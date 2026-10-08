@@ -142,3 +142,8 @@ details.comprovante[open] summary { margin-bottom: 12px; }
 .progresso > div { height: 100%; width: 0; background: #02654D; transition: width .2s; }
 
 .alerta-obs { background: #FFF6E0; border: 1px solid #DDA936; border-radius: 8px; padding: 8px 12px; color: #5c4300; }
+
+/* Compras: itens da requisição */
+.itens-req input, .itens-req select { width: 100%; min-width: 0; }
+.itens-req td:first-child { min-width: 220px; }
+@media (max-width: 700px) { .itens-req td:first-child { min-width: 0; } }

@@ -234,9 +234,10 @@ rota('/aprovacoes', async tela => {
                           && (a.aprovador_id === estado.usuario.id || (a.perfil_aprovador && tem(a.perfil_aprovador))));
   const meus = pend.filter(a => a.entidade === 'reembolso' && docs[a.entidade_id]?.status === 'aguardando_aprovacao' && docs[a.entidade_id].colaborador_id !== estado.usuario.id
                          && (a.aprovador_id === estado.usuario.id || (a.perfil_aprovador && tem(a.perfil_aprovador))));
-  const outros = pend.length - meus.length - meusA.length;
+  const comp = await cartoesCotacao(pend);
+  const outros = pend.length - meus.length - meusA.length - comp.n;
   tela.innerHTML = `
-    <div class="topo"><div><h1>Aprovações</h1><p class="sub">${meus.length + meusA.length} item(ns) esperando a sua decisão</p></div>
+    <div class="topo"><div><h1>Aprovações</h1><p class="sub">${meus.length + meusA.length + comp.n} item(ns) esperando a sua decisão</p></div>
       ${meus.length ? '<button class="btn ok" id="aprovar-sel" disabled>Aprovar selecionados</button>' : ''}</div>
     ${meus.length ? meus.map(a => { const r = docs[a.entidade_id]; return `
       <div class="cartao" data-ap="${a.id}">
@@ -249,6 +250,7 @@ rota('/aprovacoes', async tela => {
         <div class="acoes" style="margin-top:12px"><button class="btn ok peq" data-d="aprovado">Aprovar</button>
           <button class="btn peq" data-d="devolvido">Devolver p/ correção</button><button class="btn perigo peq" data-d="reprovado">Reprovar</button></div>
       </div>`; }).join('') : ''}
+    ${comp.html}
     ${meusA.map(a => { const x = adts[a.entidade_id]; return `
       <div class="cartao" data-ap="${a.id}">
         <div class="topo" style="margin-bottom:8px"><span><b>Adiantamento ${esc(x.numero)}</b> · ${esc(x.colab?.nome || x.colaborador_nome || '—')}</span><b style="font-size:18px">${brl(x.valor)}</b></div>
@@ -258,14 +260,14 @@ rota('/aprovacoes', async tela => {
           <button class="btn peq" data-d="devolvido">Devolver p/ correção</button><button class="btn perigo peq" data-d="reprovado">Reprovar</button>
           <a class="btn peq" href="#/adiantamentos/ver/${x.id}">Abrir</a></div>
       </div>`; }).join('')}
-    ${!meus.length && !meusA.length ? '<div class="cartao vazio">Nada para aprovar agora. 🎉</div>' : ''}
+    ${!meus.length && !meusA.length && !comp.n ? '<div class="cartao vazio">Nada para aprovar agora. 🎉</div>' : ''}
     ${outros > 0 && veTudo() ? `<p class="muted">${outros} item(ns) aguardam outros aprovadores (ou são lançamentos seus, que sobem para outra pessoa).</p>` : ''}`;
   $$('.anexos-de', tela).forEach(async el => { el.innerHTML = await htmlAnexos('reembolso', el.dataset.id); });
   const decidir = async (apId, decisao, comentario = null) => api.rpc('decidir_aprovacao', { p_aprovacao: apId, p_decisao: decisao, p_comentario: comentario });
   $$('[data-d]', tela).forEach(b => b.addEventListener('click', async () => {
     const apId = b.closest('[data-ap]').dataset.ap, d = b.dataset.d;
     let coment = null;
-    if (d !== 'aprovado') { coment = await confirmar(d === 'devolvido' ? 'Devolver para correção' : 'Reprovar reembolso', { comMotivo: true, botao: d === 'devolvido' ? 'Devolver' : 'Reprovar' }); if (!coment) return; }
+    if (d !== 'aprovado') { coment = await confirmar(d === 'devolvido' ? 'Devolver para correção' : 'Reprovar', { comMotivo: true, botao: d === 'devolvido' ? 'Devolver' : 'Reprovar' }); if (!coment) return; }
     await ocupado(b, async () => { try { await decidir(apId, d, coment); aviso('Decisão registrada.'); navegar(); } catch (err) { falha(err); } });
   }));
   const bSel = $('#aprovar-sel');

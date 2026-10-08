@@ -27,6 +27,7 @@ function formDados(form) {
   for (const el of form.elements) {
     if (!el.name) continue;
     if (el.type === 'checkbox') d[el.name] = el.checked;
+    else if (el.type === 'radio') { if (el.checked) d[el.name] = el.value; }
     else if (el.type === 'file') d[el.name] = [...el.files];
     else d[el.name] = el.value.trim();
   }
@@ -190,6 +191,10 @@ const MENU = [
   ['Aprovações', '#/aprovacoes', null, '✅', 'aprovar'],
   ['Meus reembolsos', '#/reembolsos', null, '🧾', 'devolvidos'],
   ['Meus adiantamentos', '#/adiantamentos', null, '💵'],
+  ['grupo', 'Compras'],
+  ['Requisições', '#/compras/requisicoes', null, '🛒', null, true],
+  ['Cotações', '#/compras/cotacoes', [...P_FIN, 'comprador', 'aprovador'], '📊', 'requisicoes_a_cotar', true],
+  ['Pedidos', '#/compras/pedidos', null, '📦', 'pedidos_a_receber', true],
   ['grupo', 'Financeiro'],
   ['Contas a pagar', '#/financeiro/pagar', [...P_FIN, 'comprador'], '💳', 'sem_comprovante', true],
   ['Contas a receber', '#/financeiro/receber', P_FIN, '📥', null, true],
@@ -383,12 +388,14 @@ rota('/inicio', async tela => {
   const notifs = await api.listar('notificacoes', `usuario_id=eq.${estado.usuario.id}&order=criado_em.desc&limit=8`);
   tela.innerHTML = `
     <div class="topo"><div><h1>Olá, ${esc(estado.usuario.nome.split(' ')[0])}</h1><p class="sub">${new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</p></div>
-      <div class="acoes"><a class="btn prim" href="#/reembolsos/novo">+ Lançar reembolso</a>${editaFin() ? '<a class="btn" href="#/financeiro/pagar/novo">+ Conta a pagar</a><a class="btn" href="#/financeiro/receber/novo">+ Conta a receber</a>' : ''}</div></div>
+      <div class="acoes"><a class="btn prim" href="#/reembolsos/novo">+ Lançar reembolso</a><a class="btn" href="#/compras/requisicoes/nova">+ Requisição de compra</a>${editaFin() ? '<a class="btn" href="#/financeiro/pagar/novo">+ Conta a pagar</a><a class="btn" href="#/financeiro/receber/novo">+ Conta a receber</a>' : ''}</div></div>
     <div class="grade" style="margin-bottom:16px">
       ${!tem('motorista') || veTudo() || tem('aprovador') ? `<a class="cartao kpi ${p.aprovar ? 'alerta' : ''}" href="#/aprovacoes"><div class="n">${p.aprovar || 0}</div><div class="r">para você aprovar</div></a>` : ''}
       <a class="cartao kpi ${p.devolvidos ? 'alerta' : ''}" href="#/reembolsos"><div class="n">${p.devolvidos || 0}</div><div class="r">reembolsos devolvidos para correção</div></a>
       ${editaFin() ? `<a class="cartao kpi" href="#/financeiro/reembolsos?status=aprovado"><div class="n">${p.reembolsos_a_pagar || 0}</div><div class="r">reembolsos aprovados a pagar</div></a>` : ''}
       ${editaFin() ? `<a class="cartao kpi ${p.sem_comprovante ? 'alerta' : ''}" href="#/financeiro/pagar?status=semcomp"><div class="n">${p.sem_comprovante || 0}</div><div class="r">pagamentos sem comprovante</div></a>` : ''}
+      ${tem('administrador', 'comprador') ? `<a class="cartao kpi ${p.requisicoes_a_cotar ? 'alerta' : ''}" href="#/compras/cotacoes"><div class="n">${p.requisicoes_a_cotar || 0}</div><div class="r">requisições para cotar</div></a>` : ''}
+      ${p.pedidos_a_receber ? `<a class="cartao kpi" href="#/compras/pedidos"><div class="n">${p.pedidos_a_receber}</div><div class="r">pedido(s) de compra a receber</div></a>` : ''}
       ${veTudo() && p.prestacao_vencida ? `<a class="cartao kpi alerta" href="#/financeiro/adiantamentos"><div class="n">${p.prestacao_vencida}</div><div class="r">prestação(ões) de contas vencida(s)</div></a>` : ''}
       ${veTudo() ? `<a class="cartao kpi ${p.a_verificar ? 'alerta' : ''}" href="#/financeiro/verificar"><div class="n">${p.a_verificar || 0}</div><div class="r">lançamentos a verificar</div></a>` : ''}
     </div>
