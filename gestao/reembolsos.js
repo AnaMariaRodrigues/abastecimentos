@@ -126,7 +126,7 @@ rota('/reembolsos/ver/:id', async (tela, id) => {
         .filter(([, v]) => v).map(([k, v]) => `<div><div class="muted">${k}</div>${esc(v)}</div>`).join('')}
       ${r.chave_acesso ? `<div class="largo"><div class="muted">Chave de acesso</div><span class="mono">${esc(r.chave_acesso)}</span></div>` : ''}
       <div class="largo"><div class="muted">Descrição</div>${esc(r.descricao || '—')}</div>
-      ${r.observacoes ? `<div class="largo alerta-obs"><b>Observações</b><br>${esc(r.observacoes)}</div>` : ''}
+      ${blocoObservacao(r.observacoes, editaFin())}
       <div class="largo"><div class="muted">Comprovantes</div>${hist}</div>
       ${['aguardando_aprovacao', 'devolvido'].includes(r.status) ? `<label class="campo largo">Incluir mais comprovantes<input type="file" id="mais" accept="image/*,application/pdf" multiple></label>` : ''}
     </div></div>
@@ -135,6 +135,7 @@ rota('/reembolsos/ver/:id', async (tela, id) => {
       ${aprov.map(a => `<li><span>${a.decisao === 'pendente' ? 'Aguardando ' + (a.aprovador_id ? esc(nomes[a.aprovador_id]?.nome) : 'perfil ' + esc(a.perfil_aprovador)) : `${tag(a.decisao)} por ${esc(nomes[a.aprovador_id]?.nome || '—')}${a.comentario ? ' — “' + esc(a.comentario) + '”' : ''}`}</span>
         <span class="muted">${dataHoraBR(a.decidido_em || a.solicitado_em)}</span></li>`).join('')}
     </ul></div>`;
+  ligarObservacao('reembolsos', id, r.observacoes);
   $('#mais')?.addEventListener('change', async e => {
     try { await anexar('reembolso', id, [...e.target.files]); aviso('Comprovante incluído.'); navegar(); } catch (err) { falha(err); }
   });
@@ -193,7 +194,7 @@ rota('/aprovacoes', async tela => {
   const pend = await api.listar('aprovacoes', 'decisao=eq.pendente&order=solicitado_em');
   const ids = pend.filter(a => a.entidade === 'reembolso').map(a => a.entidade_id);
   const docs = ids.length ? porId(await api.listar('reembolsos', `${SELECT_REEMB}&id=${lista(ids)}`)) : {};
-  const meus = pend.filter(a => a.entidade === 'reembolso' && docs[a.entidade_id] && docs[a.entidade_id].colaborador_id !== estado.usuario.id
+  const meus = pend.filter(a => a.entidade === 'reembolso' && docs[a.entidade_id]?.status === 'aguardando_aprovacao' && docs[a.entidade_id].colaborador_id !== estado.usuario.id
                          && (a.aprovador_id === estado.usuario.id || (a.perfil_aprovador && tem(a.perfil_aprovador))));
   const outros = pend.length - meus.length;
   tela.innerHTML = `
@@ -205,7 +206,7 @@ rota('/aprovacoes', async tela => {
           <span><b>Reembolso ${esc(r.numero)}</b> · ${esc(nomeColab(r))}</span></label><b style="font-size:18px">${brl(r.valor)}</b></div>
         <div class="muted">${dataBR(r.data_despesa)} · ${esc(categoriaTxt(r))} · ${esc(r.cc?.nome || '')}</div>
         <p style="margin:8px 0">${esc([r.fornecedor_nome, r.descricao].filter(Boolean).join(' — '))}</p>
-        ${r.observacoes ? `<p class="alerta-obs">⚠️ ${esc(r.observacoes)}</p>` : ''}
+        ${r.observacoes ? `<p class="alerta-obs" style="white-space:pre-line">${esc(r.observacoes)}</p>` : ''}
         <div class="anexos-de" data-id="${r.id}"><span class="muted">Carregando comprovantes…</span></div>
         <div class="acoes" style="margin-top:12px"><button class="btn ok peq" data-d="aprovado">Aprovar</button>
           <button class="btn peq" data-d="devolvido">Devolver p/ correção</button><button class="btn perigo peq" data-d="reprovado">Reprovar</button></div>

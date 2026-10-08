@@ -68,6 +68,33 @@ async function confirmar(texto, { comMotivo = false, botao = 'Confirmar' } = {})
   return r ? (comMotivo ? r.motivo : true) : null;
 }
 
+// Observações com pendência "⚠️ VERIFICAR" (contas e reembolsos)
+const temVerificar = o => (o || '').includes('VERIFICAR');
+function blocoObservacao(o, podeEditar) {
+  if (!o && !podeEditar) return '';
+  return `<div class="largo ${temVerificar(o) ? 'alerta-obs' : ''}"><div class="${temVerificar(o) ? '' : 'muted'}"><b>Observações</b></div>
+    <div style="white-space:pre-line">${o ? esc(o) : '<span class="muted">—</span>'}</div>
+    ${podeEditar ? `<div class="acoes" style="margin-top:8px">${temVerificar(o) ? '<button type="button" class="btn ok peq" id="obs-ok">Marcar como verificado</button>' : ''}
+      <button type="button" class="btn peq" id="obs-editar">${o ? 'Editar observação' : 'Incluir observação'}</button></div>` : ''}</div>`;
+}
+function ligarObservacao(tabela, id, atual) {
+  $('#obs-editar')?.addEventListener('click', async () => {
+    const r = await modal(`<form><h2>Observação</h2><label class="campo">Texto<textarea name="obs" rows="5">${esc(atual || '')}</textarea></label>
+      <p class="muted">Para deixar como pendência, comece com “⚠️ VERIFICAR:”.</p>
+      <div class="rodape"><button type="button" class="btn" data-fechar>Voltar</button><button class="btn prim">Salvar</button></div></form>`);
+    if (!r) return;
+    try { await api.alterar(tabela, `id=eq.${id}`, { observacoes: r.obs || null }); aviso('Observação salva.'); navegar(); } catch (err) { falha(err); }
+  });
+  $('#obs-ok')?.addEventListener('click', async () => {
+    const r = await modal(`<form><h2>Marcar como verificado</h2><label class="campo">O que foi confirmado?<textarea name="txt" rows="4" required placeholder="Ex.: confirmado com o posto, o valor já inclui o abastecimento"></textarea></label>
+      <div class="rodape"><button type="button" class="btn" data-fechar>Voltar</button><button class="btn ok">Confirmar</button></div></form>`);
+    if (!r) return;
+    const antes = (atual || '').replace(/⚠️\s*VERIFICAR:?/g, 'Pendência:');
+    const nova = `✔ Verificado em ${dataBR(hojeISO())} por ${estado.usuario.nome}: ${r.txt}\n(${antes})`;
+    try { await api.alterar(tabela, `id=eq.${id}`, { observacoes: nova }); aviso('Marcado como verificado.'); navegar(); } catch (err) { falha(err); }
+  });
+}
+
 // Reduz fotos grandes antes de enviar (celular)
 async function prepararArquivo(f) {
   if (!f.type.startsWith('image/') || f.size < 600 * 1024) return f;
@@ -162,7 +189,8 @@ function menu() {
     ['Aprovações', '#/aprovacoes', true, '✅', 'aprovar'],
     ['Meus reembolsos', '#/reembolsos', true, '🧾', 'devolvidos'],
     ['grupo', 'Financeiro', veTudo() || tem('comprador', 'aprovador')],
-    ['Contas a pagar', '#/financeiro/pagar', veTudo() || tem('comprador'), '💳', null, true],
+    ['Contas a pagar', '#/financeiro/pagar', veTudo() || tem('comprador'), '💳', 'sem_comprovante', true],
+    ['A verificar', '#/financeiro/verificar', veTudo(), '⚠️', 'a_verificar', true],
     ['Contas a receber', '#/financeiro/receber', veTudo(), '📥', null, true],
     ['Reembolsos', '#/financeiro/reembolsos', veTudo() || tem('aprovador'), '💰', 'reembolsos_a_pagar', true],
     ['grupo', 'Cadastros', veTudo() || tem('comprador')],
@@ -346,6 +374,8 @@ rota('/inicio', async tela => {
       ${!tem('motorista') || veTudo() || tem('aprovador') ? `<a class="cartao kpi ${p.aprovar ? 'alerta' : ''}" href="#/aprovacoes"><div class="n">${p.aprovar || 0}</div><div class="r">para você aprovar</div></a>` : ''}
       <a class="cartao kpi ${p.devolvidos ? 'alerta' : ''}" href="#/reembolsos"><div class="n">${p.devolvidos || 0}</div><div class="r">reembolsos devolvidos para correção</div></a>
       ${editaFin() ? `<a class="cartao kpi" href="#/financeiro/reembolsos?status=aprovado"><div class="n">${p.reembolsos_a_pagar || 0}</div><div class="r">reembolsos aprovados a pagar</div></a>` : ''}
+      ${editaFin() ? `<a class="cartao kpi ${p.sem_comprovante ? 'alerta' : ''}" href="#/financeiro/pagar?status=semcomp"><div class="n">${p.sem_comprovante || 0}</div><div class="r">pagamentos sem comprovante</div></a>` : ''}
+      ${veTudo() ? `<a class="cartao kpi ${p.a_verificar ? 'alerta' : ''}" href="#/financeiro/verificar"><div class="n">${p.a_verificar || 0}</div><div class="r">lançamentos a verificar</div></a>` : ''}
     </div>
     ${agenda}
     <div class="cartao"><div class="topo" style="margin:0 0 6px"><h2 style="margin:0">Avisos</h2>${notifs.some(n => !n.lida) ? '<button class="btn peq" id="lidas">Marcar como lidos</button>' : ''}</div>
