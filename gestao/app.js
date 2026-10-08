@@ -183,30 +183,43 @@ const tag = (s, vencida) => vencida ? '<span class="tag vermelho">Vencida</span>
 const ROTAS = {};
 const rota = (padrao, fn) => (ROTAS[padrao] = fn);
 
-function menu() {
-  const itens = [
-    ['Início', '#/inicio', true, '🏠'],
-    ['Aprovações', '#/aprovacoes', true, '✅', 'aprovar'],
-    ['Meus reembolsos', '#/reembolsos', true, '🧾', 'devolvidos'],
-    ['grupo', 'Financeiro', veTudo() || tem('comprador', 'aprovador')],
-    ['Contas a pagar', '#/financeiro/pagar', veTudo() || tem('comprador'), '💳', 'sem_comprovante', true],
-    ['A verificar', '#/financeiro/verificar', veTudo(), '⚠️', 'a_verificar', true],
-    ['Contas a receber', '#/financeiro/receber', veTudo(), '📥', null, true],
-    ['Reembolsos', '#/financeiro/reembolsos', veTudo() || tem('aprovador'), '💰', 'reembolsos_a_pagar', true],
-    ['grupo', 'Cadastros', veTudo() || tem('comprador')],
-    ['Fornecedores', '#/cadastros/fornecedores', veTudo() || tem('comprador'), '🏢', null, true],
-    ['Clientes', '#/cadastros/clientes', veTudo(), '🤝', null, true],
-    ['Plano de contas', '#/cadastros/plano_contas', veTudo(), '📚', null, true],
-    ['Centros de custo', '#/cadastros/centros_custo', veTudo(), '🎯', null, true],
-    ['Bancos e caixa', '#/cadastros/contas_bancarias', veTudo(), '🏦', null, true],
-    ['Veículos', '#/cadastros/veiculos', veTudo(), '🚚', null, true],
-    ['grupo', 'Configurações', tem('administrador', 'diretoria')],
-    ['Usuários e perfis', '#/config/usuarios', tem('administrador'), '👥', null, true],
-    ['Auditoria', '#/config/auditoria', veTudo(), '🔎', null, true],
-    ['Importar sistema anterior', '#/config/importar', tem('administrador'), '📦', null, true],
-  ];
-  return itens.filter(i => i[2]);
+// Catálogo de telas do menu: [rótulo, rota, perfis que podem ver (null = todos), ícone, pendência, subitem]
+const P_FIN = ['administrador', 'diretoria', 'financeiro'];
+const MENU = [
+  ['Início', '#/inicio', null, '🏠'],
+  ['Aprovações', '#/aprovacoes', null, '✅', 'aprovar'],
+  ['Meus reembolsos', '#/reembolsos', null, '🧾', 'devolvidos'],
+  ['Meus adiantamentos', '#/adiantamentos', null, '💵'],
+  ['grupo', 'Financeiro'],
+  ['Contas a pagar', '#/financeiro/pagar', [...P_FIN, 'comprador'], '💳', 'sem_comprovante', true],
+  ['Contas a receber', '#/financeiro/receber', P_FIN, '📥', null, true],
+  ['Reembolsos', '#/financeiro/reembolsos', [...P_FIN, 'aprovador'], '💰', 'reembolsos_a_pagar', true],
+  ['Fundo Fixo', '#/financeiro/fundo', P_FIN, '🪙', null, true],
+  ['Adiantamentos', '#/financeiro/adiantamentos', P_FIN, '💵', 'prestacao_vencida', true],
+  ['A verificar', '#/financeiro/verificar', P_FIN, '⚠️', 'a_verificar', true],
+  ['grupo', 'Cadastros'],
+  ['Fornecedores', '#/cadastros/fornecedores', [...P_FIN, 'comprador'], '🏢', null, true],
+  ['Clientes', '#/cadastros/clientes', P_FIN, '🤝', null, true],
+  ['Plano de contas', '#/cadastros/plano_contas', P_FIN, '📚', null, true],
+  ['Centros de custo', '#/cadastros/centros_custo', P_FIN, '🎯', null, true],
+  ['Bancos e caixa', '#/cadastros/contas_bancarias', P_FIN, '🏦', null, true],
+  ['Veículos', '#/cadastros/veiculos', P_FIN, '🚚', null, true],
+  ['grupo', 'Configurações'],
+  ['Usuários e perfis', '#/config/usuarios', ['administrador'], '👥', null, true],
+  ['Auditoria', '#/config/auditoria', P_FIN, '🔎', null, true],
+  ['Importar sistema anterior', '#/config/importar', ['administrador'], '📦', null, true],
+];
+// Telas permitidas: o perfil libera; a lista do cadastro (se houver) restringe. Administrador vê tudo.
+function menuPara(perfis, menus) {
+  const admin = perfis.includes('administrador');
+  const lista = !admin && Array.isArray(menus) && menus.length ? menus : null;
+  const ok = MENU.filter(i => i[0] === 'grupo' || ((!i[2] || i[2].some(p => perfis.includes(p))) && (!lista || lista.includes(i[1]))));
+  return ok.filter((i, k) => i[0] !== 'grupo' || (ok[k + 1] && ok[k + 1][0] !== 'grupo'));
 }
+function menu() {
+  return menuPara(estado.perfis, estado.usuario?.menus).map(i => i[0] === 'grupo' ? ['grupo', i[1], true] : [i[0], i[1], true, i[3], i[4], i[5]]);
+}
+const telaPermitida = h => { const r = '#' + h; return !MENU.some(i => i[1] === r) || menu().some(i => i[1] === r); };
 
 async function desenharCasca() {
   const pend = {};
@@ -242,6 +255,7 @@ async function navegar() {
   if (!estado.usuario) return;
   const [h, qs] = (location.hash || '#/inicio').slice(1).split('?');
   estado.params = new URLSearchParams(qs || '');
+  if (!telaPermitida(h)) { aviso('Você não tem acesso a esta tela.', true); location.hash = '#/inicio'; return; }
   await desenharCasca();
   const tela = $('#tela');
   for (const padrao in ROTAS) {
@@ -375,6 +389,7 @@ rota('/inicio', async tela => {
       <a class="cartao kpi ${p.devolvidos ? 'alerta' : ''}" href="#/reembolsos"><div class="n">${p.devolvidos || 0}</div><div class="r">reembolsos devolvidos para correção</div></a>
       ${editaFin() ? `<a class="cartao kpi" href="#/financeiro/reembolsos?status=aprovado"><div class="n">${p.reembolsos_a_pagar || 0}</div><div class="r">reembolsos aprovados a pagar</div></a>` : ''}
       ${editaFin() ? `<a class="cartao kpi ${p.sem_comprovante ? 'alerta' : ''}" href="#/financeiro/pagar?status=semcomp"><div class="n">${p.sem_comprovante || 0}</div><div class="r">pagamentos sem comprovante</div></a>` : ''}
+      ${veTudo() && p.prestacao_vencida ? `<a class="cartao kpi alerta" href="#/financeiro/adiantamentos"><div class="n">${p.prestacao_vencida}</div><div class="r">prestação(ões) de contas vencida(s)</div></a>` : ''}
       ${veTudo() ? `<a class="cartao kpi ${p.a_verificar ? 'alerta' : ''}" href="#/financeiro/verificar"><div class="n">${p.a_verificar || 0}</div><div class="r">lançamentos a verificar</div></a>` : ''}
     </div>
     ${agenda}

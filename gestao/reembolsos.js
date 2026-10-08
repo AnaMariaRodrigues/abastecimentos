@@ -5,6 +5,9 @@ const SELECT_REEMB = 'select=*,conta:plano_contas(codigo,nome),cc:centros_custo(
 const nomeColab = r => r.colab?.nome || r.colaborador_nome || '—';
 const TIPOS_COMPROVANTE = ['Cupom fiscal (NFC-e / SAT)', 'Nota fiscal (NF-e)', 'Nota fiscal de serviço (NFS-e)', 'Recibo', 'Comprovante de cartão', 'Outro'];
 const FORMAS_PAGTO = ['Dinheiro', 'Pix', 'Cartão de débito', 'Cartão de crédito', 'Outro'];
+const CUSTEIO = { reembolso: 'Reembolso', adiantamento: 'Adiantamento', fundo_fixo: 'Fundo Fixo' };
+const tagCusteio = r => r.forma_custeio && r.forma_custeio !== 'reembolso' ? ` <span class="tag azul">${CUSTEIO[r.forma_custeio]}</span>` : '';
+const pessoasSemLogin = f => cad('pessoas_sem_login', 'select=id,nome,usuario_id&order=nome', f);
 const descrTxt = r => r.descricao || r.fornecedor_nome || '';
 const categoriaTxt = r => r.conta ? `${r.conta.nome}${r.categoria_outros ? ' — ' + r.categoria_outros : ''}` : (r.categoria || '—');
 
@@ -15,11 +18,11 @@ function tabelaReembolsos(linhas, { comColab = false, selecionar = false } = {})
     ${selecionar ? '<th><input type="checkbox" id="sel-todos" aria-label="Selecionar todos"></th>' : ''}
     <th>Nº</th><th>Data</th>${comColab ? '<th>Colaborador</th>' : ''}<th>Categoria</th><th>Descrição</th><th class="num">Valor</th><th>Situação</th></tr></thead><tbody>
     ${linhas.map(r => `<tr class="clicavel" data-id="${r.id}">
-      ${selecionar ? `<td data-r="Selecionar">${r.status === 'aprovado' ? `<input type="checkbox" class="sel" value="${r.id}" data-colab="${esc(r.colaborador_id || r.colaborador_nome)}">` : ''}</td>` : ''}
+      ${selecionar ? `<td data-r="Selecionar">${r.status === 'aprovado' && (r.forma_custeio || 'reembolso') === 'reembolso' ? `<input type="checkbox" class="sel" value="${r.id}" data-colab="${esc(r.colaborador_id || r.colaborador_nome)}">` : ''}</td>` : ''}
       <td data-r="Nº" class="nowrap">${esc(r.numero)}</td><td data-r="Data">${dataBR(r.data_despesa)}</td>
       ${comColab ? `<td data-r="Colaborador">${esc(nomeColab(r))}</td>` : ''}
       <td data-r="Categoria">${esc(categoriaTxt(r))}</td><td data-r="Descrição">${r.observacoes?.includes('VERIFICAR') ? '<span title="Verificar: veja as observações">⚠️</span> ' : ''}${esc(descrTxt(r))}</td>
-      <td data-r="Valor" class="num">${brl(r.valor)}</td><td data-r="Situação">${tag(r.status)}</td></tr>`).join('')}
+      <td data-r="Valor" class="num">${brl(r.valor)}</td><td data-r="Situação">${tag(r.status)}${tagCusteio(r)}</td></tr>`).join('')}
     </tbody><tfoot><tr>${selecionar ? '<td></td>' : ''}<td colspan="${comColab ? 5 : 4}">${linhas.length} lançamento(s)</td><td class="num">${brl(total)}</td><td></td></tr></tfoot></table></div>`;
 }
 
@@ -43,14 +46,27 @@ rota('/reembolsos', async tela => {
 
 // ---------- Novo / editar ----------
 async function formReembolso(tela, r = null) {
-  const [ccs, users, vs] = await Promise.all([centros(), editaFin() ? usuarios() : [], veiculos()]);
+  const [ccs, users, vs, pessoas] = await Promise.all([centros(), editaFin() ? usuarios() : [], veiculos(), editaFin() ? pessoasSemLogin() : []]);
+  const adtParam = estado.params.get('adt');
+  const adtFixo = adtParam ? await api.um('adiantamentos', `id=eq.${adtParam}`) : null;
+  const custeioIni = r?.forma_custeio || (adtFixo ? 'adiantamento' : estado.params.get('custeio')) || 'reembolso';
+  const quemIni = adtFixo ? (adtFixo.colaborador_id ? 'u:' + adtFixo.colaborador_id : 'p:' + adtFixo.pessoa_sem_login_id)
+    : estado.params.get('custeio') === 'fundo_fixo' ? '' : 'u:' + estado.usuario.id;
+  const adtsAbertos = await api.listar('adiantamentos', 'select=id,numero,valor,motivo,colaborador_id,pessoa_sem_login_id&status=in.(pago,prestando_contas)&order=numero').catch(() => []);
   const ccPadrao = r?.centro_custo_id || estado.usuario.centro_custo_id || ccs.find(c => c.codigo === 'GERAL')?.id;
   const contaOutros = (await contas()).filter(c => /^outr/i.test(c.nome)).map(c => c.id);
   tela.innerHTML = `
-    <div class="topo"><div><h1>${r ? 'Corrigir reembolso ' + esc(r.numero) : 'Lançar reembolso'}</h1>
+    <div class="topo"><div><h1>${r ? 'Corrigir lançamento ' + esc(r.numero) : custeioIni === 'reembolso' ? 'Lançar reembolso' : custeioIni === 'fundo_fixo' ? 'Lançar despesa do Fundo Fixo' : 'Lançar despesa da prestação de contas'}</h1>
       <p class="sub">Anexe a foto ou o PDF do comprovante.</p></div></div>
     <form class="cartao form" id="f-reemb">
-      ${editaFin() && !r ? `<label class="campo">Colaborador<select name="colaborador_id">${opcoes(users.filter(u => u.ativo), null, u => u.nome, estado.usuario.id, null)}</select></label>` : ''}
+      ${editaFin() && !r ? `<label class="campo">Colaborador<select name="quem" required ${adtFixo ? 'disabled' : ''}><option value="">Selecione…</option>
+          <optgroup label="Com acesso ao sistema">${users.filter(u => u.ativo).map(u => `<option value="u:${u.id}" ${'u:' + u.id === quemIni ? 'selected' : ''}>${esc(u.nome)}</option>`).join('')}</optgroup>
+          ${pessoas.length ? `<optgroup label="Sem acesso (cadastro interno)">${pessoas.map(p => `<option value="p:${p.id}" ${'p:' + p.id === quemIni ? 'selected' : ''}>${esc(p.nome)}</option>`).join('')}</optgroup>` : ''}</select></label>` : ''}
+      <label class="campo">Como foi pago?<select name="forma_custeio" ${adtFixo ? 'disabled' : ''}>
+          <option value="reembolso" ${custeioIni === 'reembolso' ? 'selected' : ''}>Do próprio bolso (quero ser reembolsado)</option>
+          <option value="adiantamento" ${custeioIni === 'adiantamento' ? 'selected' : ''}>Com adiantamento recebido (prestação de contas)</option>
+          ${editaFin() || custeioIni === 'fundo_fixo' ? `<option value="fundo_fixo" ${custeioIni === 'fundo_fixo' ? 'selected' : ''}>Com dinheiro do Fundo Fixo</option>` : ''}</select></label>
+      <label class="campo" id="campo-adt" hidden>Adiantamento<select name="adiantamento_id" ${adtFixo ? 'disabled' : ''}></select></label>
       <label class="campo">Data da despesa<input type="date" name="data_despesa" required max="${hojeISO()}" value="${r?.data_despesa || hojeISO()}"></label>
       <label class="campo">Valor (R$)<input name="valor" inputmode="decimal" required placeholder="0,00" value="${r ? String(r.valor).replace('.', ',') : ''}"></label>
       <label class="campo">Categoria<select name="conta_id" required>${await opcoesContas(r?.conta_id)}</select></label>
@@ -74,13 +90,27 @@ async function formReembolso(tela, r = null) {
   const f = $('#f-reemb');
   const mostrarOutros = () => { $('#campo-outros').hidden = !contaOutros.includes(f.conta_id.value); };
   f.conta_id.onchange = mostrarOutros; mostrarOutros();
+  const quem = () => adtFixo ? quemIni : (f.quem ? f.quem.value : (r ? (r.colaborador_id ? 'u:' + r.colaborador_id : 'p:' + r.pessoa_sem_login_id) : 'u:' + estado.usuario.id));
+  const atualizaAdt = () => {
+    const ehAdt = f.forma_custeio.value === 'adiantamento'; $('#campo-adt').hidden = !ehAdt;
+    const q = quem(); const meus = adtsAbertos.filter(a => (a.colaborador_id && 'u:' + a.colaborador_id === q) || (a.pessoa_sem_login_id && 'p:' + a.pessoa_sem_login_id === q));
+    const sel = adtFixo?.id || r?.adiantamento_id;
+    f.adiantamento_id.innerHTML = meus.length ? meus.map(a => `<option value="${a.id}" ${a.id === sel ? 'selected' : ''}>${esc(a.numero)} · ${brl(a.valor)} · ${esc(a.motivo)}</option>`).join('')
+      : '<option value="">Nenhum adiantamento em aberto para esta pessoa</option>';
+  };
+  f.forma_custeio.onchange = atualizaAdt; if (f.quem) f.quem.onchange = atualizaAdt; atualizaAdt();
   f.onsubmit = async e => {
     e.preventDefault();
     const d = formDados(f);
     const valor = num(d.valor);
     if (!valor || valor <= 0) return aviso('Informe um valor válido.', true);
     if (contaOutros.includes(d.conta_id) && !d.categoria_outros) return aviso('Descreva a categoria "Outros".', true);
-    const dados = { data_despesa: d.data_despesa, valor, conta_id: d.conta_id, categoria_outros: contaOutros.includes(d.conta_id) ? d.categoria_outros : null,
+    const custeio = adtFixo ? 'adiantamento' : d.forma_custeio;
+    const adtId = adtFixo ? adtFixo.id : (custeio === 'adiantamento' ? f.adiantamento_id.value : null);
+    if (custeio === 'adiantamento' && !adtId) return aviso('Não há adiantamento em aberto para esta pessoa. Escolha outra forma de pagamento.', true);
+    const q = quem();
+    if (!r && editaFin() && !q) return aviso('Escolha o colaborador.', true);
+    const dados = { forma_custeio: custeio, adiantamento_id: adtId, data_despesa: d.data_despesa, valor, conta_id: d.conta_id, categoria_outros: contaOutros.includes(d.conta_id) ? d.categoria_outros : null,
                     centro_custo_id: d.centro_custo_id || null, veiculo_id: d.veiculo_id || null, descricao: d.descricao, status: 'aguardando_aprovacao' };
     for (const k of ['fornecedor_nome', 'fornecedor_documento', 'tipo_comprovante', 'numero_documento', 'forma_pagamento', 'cidade']) dados[k] = (d[k] || '').trim() || null;
     dados.uf = (d.uf || '').trim().toUpperCase() || null;
@@ -89,10 +119,13 @@ async function formReembolso(tela, r = null) {
       try {
         let id;
         if (r) { await api.alterar('reembolsos', `id=eq.${r.id}`, dados); id = r.id; }
-        else { const [novo] = await api.inserir('reembolsos', { ...dados, colaborador_id: d.colaborador_id || estado.usuario.id }); id = novo.id; }
+        else {
+          const pessoa = q.startsWith('p:') ? pessoas.find(p => 'p:' + p.id === q) : null;
+          const [novo] = await api.inserir('reembolsos', { ...dados, colaborador_id: pessoa ? null : q.slice(2),
+            pessoa_sem_login_id: pessoa?.id || null, colaborador_nome: pessoa?.nome || null }); id = novo.id; }
         await anexar('reembolso', id, d.arquivos);
         aviso(r ? 'Reembolso reenviado.' : 'Reembolso enviado para aprovação.');
-        location.hash = '#/reembolsos/ver/' + id;
+        location.hash = adtId ? '#/adiantamentos/ver/' + adtId : '#/reembolsos/ver/' + id;
       } catch (err) { falha(err); }
     });
   };
@@ -121,6 +154,7 @@ rota('/reembolsos/ver/:id', async (tela, id) => {
       <div><div class="muted">Valor</div><b>${brl(r.valor)}</b></div>
       <div><div class="muted">Categoria</div><b>${esc(categoriaTxt(r))}</b></div>
       <div><div class="muted">Centro de custo</div><b>${esc(r.cc?.nome || '—')}</b></div>
+      <div><div class="muted">Como foi pago</div><b>${esc(CUSTEIO[r.forma_custeio] || 'Reembolso')}</b>${r.adiantamento_id ? ` · <a href="#/adiantamentos/ver/${r.adiantamento_id}">ver adiantamento</a>` : ''}${r.forma_custeio === 'fundo_fixo' ? '<div class="muted">Ao aprovar, sai do saldo do Fundo Fixo</div>' : ''}</div>
       ${[['Estabelecimento', r.fornecedor_nome], ['CNPJ / CPF', r.fornecedor_documento], ['Comprovante', [r.tipo_comprovante, r.numero_documento && 'nº ' + r.numero_documento].filter(Boolean).join(' · ')],
          ['Forma de pagamento', r.forma_pagamento], ['Cidade', [r.cidade, r.uf].filter(Boolean).join(' / ')], ['Placa', r.placa], ['Rota', r.rota]]
         .filter(([, v]) => v).map(([k, v]) => `<div><div class="muted">${k}</div>${esc(v)}</div>`).join('')}
@@ -150,7 +184,7 @@ rota('/reembolsos/ver/:id', async (tela, id) => {
 // ---------- Gestão (Financeiro) ----------
 rota('/financeiro/reembolsos', async tela => {
   const st = estado.params.get('status') || 'abertos';
-  const filtroSt = { abertos: 'status=in.(aguardando_aprovacao,aprovado,em_pagamento,devolvido)', aprovado: 'status=eq.aprovado',
+  const filtroSt = { abertos: 'status=in.(aguardando_aprovacao,aprovado,em_pagamento,devolvido)', aprovado: 'status=eq.aprovado&forma_custeio=eq.reembolso',
                      pago: 'status=eq.pago', todos: 'status=neq.cancelado' }[st] || 'status=neq.cancelado';
   const ini = estado.params.get('de') || '', fim = estado.params.get('ate') || '';
   const linhas = await api.listar('reembolsos', `${SELECT_REEMB}&${filtroSt}${ini ? '&data_despesa=gte.' + ini : ''}${fim ? '&data_despesa=lte.' + fim : ''}&order=data_despesa.desc,numero.desc&limit=1000`);
@@ -194,11 +228,15 @@ rota('/aprovacoes', async tela => {
   const pend = await api.listar('aprovacoes', 'decisao=eq.pendente&order=solicitado_em');
   const ids = pend.filter(a => a.entidade === 'reembolso').map(a => a.entidade_id);
   const docs = ids.length ? porId(await api.listar('reembolsos', `${SELECT_REEMB}&id=${lista(ids)}`)) : {};
+  const idsA = pend.filter(a => a.entidade === 'adiantamento').map(a => a.entidade_id);
+  const adts = idsA.length ? porId(await api.listar('adiantamentos', `select=*,colab:usuarios(nome)&id=${lista(idsA)}`)) : {};
+  const meusA = pend.filter(a => a.entidade === 'adiantamento' && adts[a.entidade_id]?.status === 'aguardando_aprovacao' && adts[a.entidade_id].colaborador_id !== estado.usuario.id
+                          && (a.aprovador_id === estado.usuario.id || (a.perfil_aprovador && tem(a.perfil_aprovador))));
   const meus = pend.filter(a => a.entidade === 'reembolso' && docs[a.entidade_id]?.status === 'aguardando_aprovacao' && docs[a.entidade_id].colaborador_id !== estado.usuario.id
                          && (a.aprovador_id === estado.usuario.id || (a.perfil_aprovador && tem(a.perfil_aprovador))));
-  const outros = pend.length - meus.length;
+  const outros = pend.length - meus.length - meusA.length;
   tela.innerHTML = `
-    <div class="topo"><div><h1>Aprovações</h1><p class="sub">${meus.length} item(ns) esperando a sua decisão</p></div>
+    <div class="topo"><div><h1>Aprovações</h1><p class="sub">${meus.length + meusA.length} item(ns) esperando a sua decisão</p></div>
       ${meus.length ? '<button class="btn ok" id="aprovar-sel" disabled>Aprovar selecionados</button>' : ''}</div>
     ${meus.length ? meus.map(a => { const r = docs[a.entidade_id]; return `
       <div class="cartao" data-ap="${a.id}">
@@ -210,7 +248,17 @@ rota('/aprovacoes', async tela => {
         <div class="anexos-de" data-id="${r.id}"><span class="muted">Carregando comprovantes…</span></div>
         <div class="acoes" style="margin-top:12px"><button class="btn ok peq" data-d="aprovado">Aprovar</button>
           <button class="btn peq" data-d="devolvido">Devolver p/ correção</button><button class="btn perigo peq" data-d="reprovado">Reprovar</button></div>
-      </div>`; }).join('') : '<div class="cartao vazio">Nada para aprovar agora. 🎉</div>'}
+      </div>`; }).join('') : ''}
+    ${meusA.map(a => { const x = adts[a.entidade_id]; return `
+      <div class="cartao" data-ap="${a.id}">
+        <div class="topo" style="margin-bottom:8px"><span><b>Adiantamento ${esc(x.numero)}</b> · ${esc(x.colab?.nome || x.colaborador_nome || '—')}</span><b style="font-size:18px">${brl(x.valor)}</b></div>
+        <div class="muted">${x.data_saida ? 'Saída ' + dataBR(x.data_saida) : ''}${x.data_retorno ? ' · retorno ' + dataBR(x.data_retorno) : ''}</div>
+        <p style="margin:8px 0">${esc(x.motivo)}</p>
+        <div class="acoes" style="margin-top:12px"><button class="btn ok peq" data-d="aprovado">Aprovar</button>
+          <button class="btn peq" data-d="devolvido">Devolver p/ correção</button><button class="btn perigo peq" data-d="reprovado">Reprovar</button>
+          <a class="btn peq" href="#/adiantamentos/ver/${x.id}">Abrir</a></div>
+      </div>`; }).join('')}
+    ${!meus.length && !meusA.length ? '<div class="cartao vazio">Nada para aprovar agora. 🎉</div>' : ''}
     ${outros > 0 && veTudo() ? `<p class="muted">${outros} item(ns) aguardam outros aprovadores (ou são lançamentos seus, que sobem para outra pessoa).</p>` : ''}`;
   $$('.anexos-de', tela).forEach(async el => { el.innerHTML = await htmlAnexos('reembolso', el.dataset.id); });
   const decidir = async (apId, decisao, comentario = null) => api.rpc('decidir_aprovacao', { p_aprovacao: apId, p_decisao: decisao, p_comentario: comentario });
