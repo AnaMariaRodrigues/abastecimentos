@@ -10,6 +10,8 @@ const STATUS_ADT = { aguardando_aprovacao: ['Aguardando aprovação', 'amarelo']
 const tagAdt = a => adtVencido(a) ? '<span class="tag vermelho">Prestação vencida</span>' : `<span class="tag ${STATUS_ADT[a.status]?.[1] || ''}">${STATUS_ADT[a.status]?.[0] || a.status}</span>`;
 const dadosConta = c => c ? [c.titular, c.banco && `Banco ${c.banco}`, c.agencia && `Ag. ${c.agencia}`, c.conta && `Conta ${c.conta}`, c.chave_pix && `Pix ${c.chave_pix}`].filter(Boolean).join(' · ') : '';
 const SELECT_ADT = 'select=*,colab:usuarios(nome)';
+const difTxt = a => Number(a.valor_assumido_colaborador) > 0 ? `<div class="muted">Diferença de ${brl(a.valor_assumido_colaborador)} assumida pelo colaborador</div>`
+  : Number(a.valor_complemento) > 0 ? `<div class="muted">Diferença de ${brl(a.valor_complemento)} ${a.diferenca_coberta_por === 'fundo_fixo' ? 'paga pelo Fundo Fixo' : 'em Contas a pagar'}</div>` : '';
 
 function tabelaAdts(linhas, comNome = true) {
   if (!linhas.length) return '<div class="vazio">Nenhum adiantamento.</div>';
@@ -110,14 +112,15 @@ rota('/adiantamentos/ver/:id', async (tela, id) => {
       <div class="cartao kpi ${emAnalise ? 'alerta' : ''}"><div class="n" style="font-size:22px">${brl(emAnalise)}</div><div class="r">em aprovação</div></div>
       <div class="cartao kpi"><div class="n" style="font-size:22px">${brl(devolvido)}</div><div class="r">devolvido</div></div>
       <div class="cartao kpi ${a.status !== 'acertado' && Math.abs(saldo) > 0.004 ? 'alerta' : ''}"><div class="n" style="font-size:22px">${brl(Math.abs(saldo))}</div>
-        <div class="r">${a.status === 'acertado' ? 'acertado' : saldo > 0.004 ? 'a devolver ou comprovar' : saldo < -0.004 ? 'a complementar ao colaborador' : 'sem diferença'}</div></div>
+        <div class="r">${a.status === 'acertado' ? (Number(a.valor_assumido_colaborador) > 0 ? 'assumido pelo colaborador' : 'acertado') : saldo > 0.004 ? 'a devolver ou comprovar' : saldo < -0.004 ? 'a complementar ao colaborador' : 'sem diferença'}</div></div>
     </div>
     <div class="cartao"><div class="form">
       <div><div class="muted">Saída / retorno</div><b>${a.data_saida ? dataBR(a.data_saida) : '—'}${a.data_retorno ? ' → ' + dataBR(a.data_retorno) : ''}</b></div>
       <div><div class="muted">Entregue</div><b>${a.data_entrega ? dataBR(a.data_entrega) + ' · ' + esc(a.forma_entrega || '') : '—'}</b>${a.conta_bancaria_id ? `<div class="muted">de ${esc(bs.find(b => b.id === a.conta_bancaria_id)?.nome || '')}</div>` : ''}</div>
       <div><div class="muted">Prestar contas até</div><b>${a.prazo_prestacao ? dataBR(a.prazo_prestacao) : '—'}</b></div>
-      ${a.status === 'acertado' ? `<div><div class="muted">Acerto</div><b>${dataHoraBR(a.acertado_em)}</b>${Number(a.valor_complemento) > 0 ? `<div class="muted">Complemento de ${brl(a.valor_complemento)} em Contas a pagar</div>` : ''}</div>` : ''}
+      ${a.status === 'acertado' ? `<div><div class="muted">Acerto</div><b>${dataHoraBR(a.acertado_em)}</b>${difTxt(a)}</div>` : ''}
       <div class="largo"><div class="muted">Comprovante da entrega</div>${anexosEntrega}</div>
+      ${a.diferenca_coberta_por === 'fundo_fixo' ? `<div class="largo"><div class="muted">Comprovante do pagamento da diferença</div>${await htmlAnexos('complemento', id)}</div>` : ''}
       ${blocoObservacao(a.observacoes, editaFin())}
     </div></div>
     <div class="cartao"><h2>Despesas da prestação de contas (${desp.length})</h2>${tabelaReembolsos(desp)}</div>
@@ -170,12 +173,38 @@ rota('/adiantamentos/ver/:id', async (tela, id) => {
   });
 
   $('#acertar')?.addEventListener('click', async () => {
-    const msg = emAnalise > 0 ? 'Ainda há despesas em aprovação. Aprove ou reprove antes do acerto.'
-      : saldo > 0.004 ? `Falta ${brl(saldo)}: registre a devolução da sobra antes do acerto.`
-      : saldo < -0.004 ? `O colaborador gastou ${brl(-saldo)} a mais. Ao confirmar, a diferença vira uma conta a pagar para ele.` : 'Prestação de contas fecha sem diferença.';
-    if (emAnalise > 0 || saldo > 0.004) return aviso(msg, true);
-    if (!await confirmar(msg + ' Confirmar o acerto?', { botao: 'Fazer o acerto' })) return;
-    try { await api.rpc('acertar_adiantamento', { p_id: id }); aviso('Adiantamento acertado.'); navegar(); } catch (err) { falha(err); }
+    if (emAnalise > 0) return aviso('Ainda há despesas em aprovação. Aprove ou reprove antes do acerto.', true);
+    if (saldo > 0.004) return aviso(`Falta ${brl(saldo)}: registre a devolução da sobra antes do acerto.`, true);
+    if (saldo >= -0.004) {
+      if (!await confirmar('Prestação de contas fecha sem diferença. Confirmar o acerto?', { botao: 'Fazer o acerto' })) return;
+      try { await api.rpc('acertar_adiantamento', { p_id: id }); aviso('Adiantamento acertado.'); navegar(); } catch (err) { falha(err); }
+      return;
+    }
+    // gastou a mais: o Financeiro decide quem cobre a diferença
+    const dif = -saldo, doFundo = bs.find(b => b.id === a.conta_bancaria_id)?.tipo === 'fundo_fixo';
+    const r = await modal(`<form><h2>Acerto · ${esc(a.numero)}</h2>
+      <p>O colaborador gastou <b>${brl(dif)}</b> a mais do que recebeu. Quem cobre essa diferença?</p>
+      <div class="form"><div class="largo">
+        <label class="opcao"><input type="radio" name="quem" value="empresa" checked>
+          <span>${doFundo ? '<b>Pagar pelo Fundo Fixo</b> — a diferença sai do fundo agora' : '<b>A empresa paga</b> — vira uma conta a pagar ao colaborador'}</span></label>
+        <label class="opcao"><input type="radio" name="quem" value="colaborador">
+          <span><b>O colaborador assume</b> — nada é pago nem gerado; fica registrado no adiantamento</span></label></div>
+        <div class="largo form" id="pg-fundo" style="padding:0">
+          ${doFundo ? `<label class="campo">Data<input type="date" name="data" value="${hojeISO()}"></label>
+            <label class="campo">Forma<select name="forma">${FORMAS_DIN.map(x => `<option>${x}</option>`).join('')}</select></label>
+            <label class="campo largo">Comprovante (obrigatório, exceto dinheiro)<input type="file" name="arquivos" accept="image/*,application/pdf" multiple></label>`
+          : `<label class="campo">Vencimento da conta a pagar<input type="date" name="venc" value="${hojeISO()}"></label>`}</div></div>
+      <div class="rodape"><button type="button" class="btn" data-fechar>Voltar</button><button class="btn ok">Fazer o acerto</button></div></form>`, {
+      aoAbrir: raiz => { const sinc = () => { $('#pg-fundo', raiz).hidden = $('[name=quem]:checked', raiz).value !== 'empresa'; };
+        $$('[name=quem]', raiz).forEach(x => (x.onchange = sinc)); sinc(); },
+      validar: d => d.quem === 'empresa' && doFundo && d.forma !== 'Dinheiro' && !d.arquivos?.length ? 'Anexe o comprovante do pagamento. Só dinheiro dispensa comprovante.' : null });
+    if (!r) return;
+    try {
+      await api.rpc('acertar_adiantamento', { p_id: id, p_diferenca: r.quem, p_vencimento: r.venc || hojeISO(), p_forma: r.forma || null, p_data: r.data || hojeISO() });
+      if (r.quem === 'empresa' && doFundo) await anexar('complemento', id, r.arquivos);
+      aviso(r.quem === 'colaborador' ? 'Acerto feito: diferença assumida pelo colaborador.' : doFundo ? 'Acerto feito: diferença paga pelo Fundo Fixo.' : 'Acerto feito: diferença lançada em Contas a pagar.');
+      navegar();
+    } catch (err) { falha(err); }
   });
 
   $('#cancelar')?.addEventListener('click', async () => {

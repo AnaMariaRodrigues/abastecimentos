@@ -301,7 +301,7 @@ rota('/compras/cotacoes/ver/:id', async (tela, id) => {
     const maisBarata = props.find(p => Number(p.valor_total) === menor);
     const r2 = await modal(`<form><h2>Enviar compra para aprovação</h2>
       <p class="muted">A aprovação é da compra: o aprovador vê todas as propostas e a escolhida. Aprovada, o pedido de compra é emitido.</p>
-      <div class="form"><div class="largo"><b>Proposta escolhida</b>${props.map(p => `<label class="check" style="display:flex;margin:6px 0"><input type="radio" name="venc" value="${p.id}" ${(venc || maisBarata).id === p.id ? 'checked' : ''}>
+      <div class="form"><div class="largo"><b>Proposta escolhida</b>${props.map(p => `<label class="opcao"><input type="radio" name="venc" value="${p.id}" ${(venc || maisBarata).id === p.id ? 'checked' : ''}>
           <span>${esc(nomeForn(fs[p.fornecedor_id]))} · <b>${brl(p.valor_total)}</b>${Number(p.valor_total) === menor ? ' <span class="tag azul">Menor preço</span>' : ''}</span></label>`).join('')}</div>
         <div class="largo conferencia" id="regra"></div>
         <label class="campo largo">Conta do plano de contas<select name="conta" required>${await opcoesContas(c.conta_id, ['custo', 'despesa', 'investimento'])}</select></label>

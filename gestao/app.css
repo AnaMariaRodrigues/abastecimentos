@@ -147,3 +147,7 @@ details.comprovante[open] summary { margin-bottom: 12px; }
 .itens-req input, .itens-req select { width: 100%; min-width: 0; }
 .itens-req td:first-child { min-width: 220px; }
 @media (max-width: 700px) { .itens-req td:first-child { min-width: 0; } }
+
+/* Opções de escolha (rádio) em modais */
+.opcao { display: flex; gap: 10px; align-items: flex-start; margin: 8px 0; text-align: left; cursor: pointer; }
+.opcao input { width: auto; min-width: 0; flex: none; margin-top: 3px; }
